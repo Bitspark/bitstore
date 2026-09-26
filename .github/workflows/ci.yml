@@ -1,0 +1,46 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: store/ts/package-lock.json
+      - name: Go formatting
+        shell: bash
+        run: test -z "$(gofmt -l store/go conformance/go cmd/bs-codec/go)"
+      - run: go vet ./...
+      - run: go test -count=1 ./...
+      - run: go test -race -count=1 ./...
+        if: runner.os == 'Linux'
+      - run: npm ci --ignore-scripts
+        working-directory: store/ts
+      - run: npm run check
+        working-directory: store/ts
+      - run: npm run build
+        working-directory: store/ts
+      - run: npm test
+        working-directory: store/ts
+      - run: node scripts/interop.mjs
+      - run: node scripts/package-smoke.mjs

@@ -1,0 +1,242 @@
+{
+  "service": "bitstore",
+  "contract": "2026-09-24",
+  "doc": "The operation table of the bit-services standard: one row per verb of SURFACE.md and one per operational route. Verbs that share a route share its method and path; parameters travel in the path where the template names them and in the query otherwise. SURFACE.md is the contract where this table is silent.",
+  "surface": "SURFACE.md",
+  "bindings": {
+    "primary": "http",
+    "http": "HTTP.md"
+  },
+  "refusals": [
+    {
+      "name": "not_found",
+      "http": 404,
+      "meaning": "the name asked for is not here"
+    },
+    {
+      "name": "too_large",
+      "http": 413,
+      "meaning": "the bytes exceed what this deployment accepts"
+    }
+  ],
+  "operations": [
+    {
+      "name": "get",
+      "kind": "read",
+      "doc": "the bytes of one blob",
+      "params": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "doc": "sha256:<64 lowercase hex digits>"
+        }
+      ],
+      "response": "bytes",
+      "errors": [
+        "bad_request",
+        "not_found"
+      ],
+      "http": {
+        "method": "GET",
+        "path": "/v1/blobs/{name}"
+      }
+    },
+    {
+      "name": "get_many",
+      "kind": "read",
+      "doc": "blobs keyed by name, unordered; a name not here produces no record",
+      "request": "NamesRequest",
+      "response": "records",
+      "errors": [
+        "bad_request"
+      ],
+      "http": {
+        "method": "POST",
+        "path": "/v1/get"
+      }
+    },
+    {
+      "name": "has",
+      "kind": "read",
+      "doc": "which of the names are here: the keys of sizes",
+      "request": "NamesRequest",
+      "response": "StatResponse",
+      "errors": [
+        "bad_request"
+      ],
+      "http": {
+        "method": "POST",
+        "path": "/v1/stat"
+      }
+    },
+    {
+      "name": "size",
+      "kind": "read",
+      "doc": "the byte count of each name that is here: the values of sizes",
+      "request": "NamesRequest",
+      "response": "StatResponse",
+      "errors": [
+        "bad_request"
+      ],
+      "http": {
+        "method": "POST",
+        "path": "/v1/stat"
+      }
+    },
+    {
+      "name": "get_range",
+      "kind": "read",
+      "doc": "the overlap of a byte range with one blob; past the end is a short read",
+      "params": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "doc": "sha256:<64 lowercase hex digits>"
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "required": false,
+          "doc": "the first byte, from 0"
+        },
+        {
+          "name": "length",
+          "type": "integer",
+          "required": false,
+          "doc": "at most this many bytes; to the end when omitted"
+        }
+      ],
+      "response": "bytes",
+      "errors": [
+        "bad_request",
+        "not_found"
+      ],
+      "http": {
+        "method": "GET",
+        "path": "/v1/blobs/{name}"
+      }
+    },
+    {
+      "name": "get_stream",
+      "kind": "stream",
+      "doc": "the bytes of one blob, incrementally; cancellation is closing the connection",
+      "params": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "doc": "sha256:<64 lowercase hex digits>"
+        }
+      ],
+      "response": "bytes",
+      "errors": [
+        "bad_request",
+        "not_found"
+      ],
+      "http": {
+        "method": "GET",
+        "path": "/v1/blobs/{name}"
+      }
+    },
+    {
+      "name": "put",
+      "kind": "mutation",
+      "doc": "store bytes under their name; idempotent",
+      "request": "bytes",
+      "response": "PutResponse",
+      "errors": [
+        "bad_request",
+        "too_large"
+      ],
+      "http": {
+        "method": "POST",
+        "path": "/v1/blobs"
+      }
+    },
+    {
+      "name": "put_many",
+      "kind": "mutation",
+      "doc": "store each record under its name, per item, in request order",
+      "request": "records",
+      "response": "PutManyResponse",
+      "errors": [
+        "bad_request"
+      ],
+      "http": {
+        "method": "POST",
+        "path": "/v1/put"
+      }
+    },
+    {
+      "name": "put_stream",
+      "kind": "mutation",
+      "doc": "store bytes arriving incrementally; commits only at clean end of body",
+      "request": "bytes",
+      "response": "PutResponse",
+      "errors": [
+        "bad_request",
+        "too_large"
+      ],
+      "http": {
+        "method": "POST",
+        "path": "/v1/blobs"
+      }
+    },
+    {
+      "name": "livez",
+      "kind": "operational",
+      "doc": "the process is up",
+      "response": "Health",
+      "errors": [],
+      "http": {
+        "method": "GET",
+        "path": "/livez"
+      }
+    },
+    {
+      "name": "healthz",
+      "kind": "operational",
+      "doc": "the store can serve",
+      "response": "Health",
+      "errors": [],
+      "http": {
+        "method": "GET",
+        "path": "/healthz"
+      }
+    },
+    {
+      "name": "describe",
+      "kind": "operational",
+      "doc": "the service's description",
+      "response": "Describe",
+      "errors": [],
+      "http": {
+        "method": "GET",
+        "path": "/describe"
+      }
+    },
+    {
+      "name": "describe_file",
+      "kind": "operational",
+      "doc": "one file /describe lists, byte for byte",
+      "params": [
+        {
+          "name": "file",
+          "type": "string",
+          "required": true,
+          "doc": "a name describe.files lists"
+        }
+      ],
+      "response": "file",
+      "errors": [
+        "not_found"
+      ],
+      "http": {
+        "method": "GET",
+        "path": "/describe/{file...}"
+      }
+    }
+  ]
+}
