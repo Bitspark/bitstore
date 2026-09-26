@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// BytesBackendProfile identifies the raw bytes adapter, independently of Data's
+// BytesBackendProfile identifies the raw bytes adapter, independently of DataTree's
 // codec profile. An advertisement promises the complete raw Store contract.
 const BytesBackendProfile = "bitstore/bytes"
 const BytesBackendVersion = "1"

@@ -24,13 +24,13 @@ func run() error {
 		return err
 	}
 	ctx := context.Background()
-	var d *bs.Data
+	var d bs.DataTree
 	if in.Flat != "" {
 		b, err := hex.DecodeString(in.Flat)
 		if err != nil {
 			return err
 		}
-		d, err = bs.DecodeFlat(b, bs.DataLimits{})
+		d, err = bs.DecodeFlat(b, bs.DataTreeLimits{})
 		if err != nil {
 			return err
 		}
@@ -50,16 +50,16 @@ func run() error {
 			}
 		}
 		var err error
-		d, err = bs.LoadData(ctx, s, in.Root, bs.DataLimits{})
+		d, err = bs.LoadDataTree(ctx, s, in.Root, bs.DataTreeLimits{})
 		if err != nil {
 			return err
 		}
 	}
-	b, err := bs.EncodeFlat(d, bs.DataLimits{})
+	b, err := bs.EncodeFlat(context.Background(), d, bs.DataTreeLimits{})
 	if err != nil {
 		return err
 	}
-	root, chunks, err := bs.EncodeLinked(d, bs.DataLimits{})
+	root, chunks, err := bs.EncodeLinked(context.Background(), d, bs.DataTreeLimits{})
 	if err != nil {
 		return err
 	}

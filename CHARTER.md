@@ -2,14 +2,18 @@
 
 ## Decisions owned here
 
-Bitstore owns the public `Bytes`, `Data`, and `Store` interfaces, data-specific
+Bitstore owns the public `Bytes`, `Data`, `DataTree`, and `Store` interfaces, data-specific
 structural and encoding bindings, content identity, and independently specified
 conformance cases. Pure data construction and codecs are library facilities.
 The deployed blob service, filesystem persistence, and instance administration
 remain service responsibilities in the private bitstore-svc repository.
 
-Data realizes the Deixis mandatory-own-value model: every node has its own bytes
-and whole byte-keyed children. Empty payload, empty key, empty path, a missing
+`Data` is an addressless fixed-content reader. `DataTree = DeixisNode<Data>`
+realizes the Deixis mandatory-own-value model: every node has its own reader
+and whole byte-keyed children. The generic contract includes own, complete
+children, selection and decomposition, equally for `WireTree = DeixisNode<Wire>`.
+Pure structure does not invoke readers or senders. Serialized snapshots contain
+bytes read from capabilities, never executable capabilities. Empty payload, empty key, empty path, a missing
 node, and unavailable or corrupt storage remain distinct observations.
 
 ## Consumer promise and versions

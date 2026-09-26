@@ -1,34 +1,79 @@
-# Data model and persistence profile
+# DataTree model and persistence profile
 
-`Bytes` is a finite sequence of octets. `Data = Deixis[Bytes]` is a finite
-tree whose every node has mandatory own bytes and a finite map from exact byte
-keys to whole child values. Keys need not be text. No normalization, slash
-splitting, parent pointer, mutable name or application fact schema is implied.
+`Bytes` is a finite sequence of octets. `Data` is an addressless reader of
+fixed bytes. `DataTree = DeixisNode<Data>` is a finite acyclic tree whose every
+node has a mandatory own reader and a complete finite map from exact byte keys
+to whole child nodes. The peer is `WireTree = DeixisNode<Wire>`; `Wire` is an
+addressless sender. Deixis owns one structural contract for both.
 
-Empty own bytes are a value. Empty path selects the current value. A path with
-one empty key selects that child. Missing path is separate from an existing
-empty leaf, unavailable storage, invalid encoding and corrupt content.
-Reconstructing a value from its own bytes and whole children preserves it.
-The native presentations are immutable and copy incoming and outgoing bytes.
+```ts
+interface Data { read(): Promise<Bytes>; }
+type DataTree = DeixisNode<Data>;
+interface Wire { send(message: Message): void; }
+type WireTree = DeixisNode<Wire>;
+```
+
+The common node interface has `own()`, `children()`, `at(path)` and
+`decompose()`. Composition receives one own payload and whole keyed children.
+Selection at an empty path returns the current node; concatenated selection
+is equivalent to successive selection. Decomposition followed by composition
+preserves own payload and all child observations. Structure is finite and
+acyclic; shared child objects denote repeated whole subtrees, not links in the
+model. Child keys are exact byte strings, including empty and non-UTF-8 keys.
+No normalization, slash splitting, parent pointer or mutable name is implied.
+
+```text
+read(tree, path)          = select(tree, path).own().read()
+send(tree, path, message) = select(tree, path).own().send(message)
+```
+
+These equations assume an existing path. Missing paths have their own result;
+an existing reader may fail without removing its node. Empty bytes are a value.
+A path containing one empty key selects that child, distinct from an empty path.
+All successful reads from a `Data` return the same content in independently
+owned buffers. Byte-backed helpers enforce this; custom readers must honor it.
 
 ## Native presentations
 
-Go: `NewData`, `Own`, `Children`, `At`; zero `Data` is the empty leaf.
-TypeScript: `new Data`, `own`, `children`, `at`. The TypeScript carrier is
-`Uint8Array`; the Go carrier is `[]byte`. Child enumeration is byte-sorted.
+Go defines `Data.Read(context.Context) (Bytes, error)` and the literal alias
+`DataTree = DeixisNode[Data]`. Generic nodes expose `Own`, `Children`, `At(TreePath)`
+and `Decompose`; `Compose` reconstructs them. `NewDataTree` takes a `Data` and
+`Child[Data]` children. `BytesData` constructs an immutable reader from copied
+bytes. A nil tree interface is invalid, not an empty leaf.
 
-`EncodeFlat` / `encodeFlat` exchanges one self-contained value. `EncodeLinked`
-/ `encodeLinked` returns an explicitly qualified root and content-addressed
-chunks. `PutData` / `putData` puts chunks leaves first and returns the root
-only after every acknowledgement matches. Failure can leave immutable orphan
-chunks. Keeping, publishing or replacing a root is the caller's responsibility.
+TypeScript defines `Data.read(): Promise<Bytes>` and the literal alias
+`DataTree = DeixisNode<Data>`. Use `dataTree(bytesData(bytes), children)` to build
+byte-backed trees, or pass any lawful reader to `dataTree`. `compose` and
+`select` are generic. `at` takes one array of byte-key segments. `decompose`
+returns `{own, children}`. The same structural interface accepts independent
+implementations without class identity checks. Constructors copy keys and retain
+payloads and child capabilities; they never invoke readers.
 
-`OpenData` / `openData` verifies just the root and exposes a `View`; `At` /
-`at` fetches only the selected path, relative to the current view. Own values
-and child roots can be observed without fetching siblings. `LoadData` /
-`loadData` verifies the complete closure and reconstructs the value.
-Independent operations do not share a mutable cache. Application cancellation
-propagates to storage; synchronous in-memory encoding finishes its current work.
+`Read(ctx, tree, path)` / `read(tree, path, signal?)` performs the derived
+operation. Go passes cancellation into `Data.Read`. The exact TypeScript
+primitive has no cancellation argument: derived operations check an optional
+AbortSignal before and after awaits, while an individual custom reader owns
+its I/O cancellation. A read failure is propagated without translating it into
+structural absence.
+
+`EncodeFlat(ctx, tree, limits)` / `await encodeFlat(tree, options, signal?)`
+materializes readers and exchanges a self-contained byte snapshot. Linked
+encoding and `PutDataTree` / `putDataTree` likewise serialize returned bytes,
+never reader functions or references. Decoding reconstructs a tree of immutable
+byte-backed readers. The byte grammar, codec profile and content addresses have
+not changed. Encoding applies resource bounds and checks cancellation. A failed
+materialization returns no artifact and performs no Store writes.
+
+`PutDataTree` puts chunks leaves first and returns a root only after every
+acknowledgement matches. A later put failure may leave immutable orphan chunks.
+Publishing or replacing a root remains the caller's responsibility.
+
+`OpenDataTree` / `openDataTree` verifies just the root and exposes a separate
+`DataTreeView`: own bytes and child roots, with asynchronous path access. This
+lazy storage view does **not** claim to implement the complete `DataTree`
+interface. `LoadDataTree` / `loadDataTree` verifies the full closure and returns
+that complete structure. Availability and integrity failures stay distinct from
+missing child paths. Independent operations do not share a mutable cache.
 
 ## Identity and codec status
 
@@ -40,7 +85,9 @@ root. Reject unknown profiles; migrate by explicit decode and re-encode.
 
 Bitstore has no runtime or build dependency on the private Deixis repository.
 This is a data-specific implementation of its model and candidate codec, not a
-publication of that repository, a generic Deixis core, or a clean-room claim.
+publication of that repository, a publication of a private Deixis implementation, or a clean-room claim.
+The public generic interface and small structural construction helpers are
+independent native presentations of Deixis-owned laws.
 
 ## Canonical identity-bytes encoding
 
@@ -61,8 +108,8 @@ hashes in first-use order while scanning canonical child keys. Every listed
 hash must be used; indices must be in range; first new indices are `0,1,...`.
 The hash is SHA-256 of the **entire raw chunk**, including magic and codec id,
 without an additional domain prefix. A storage name is `sha256:<lowercase hex>`;
-a Data address is `dxl2:<lowercase hex>` paired with the exact profile. A flat
-checksum is never a Data address. Equality of hashes is computational identity
+a DataTree address is `dxl2:<lowercase hex>` paired with the exact profile. A flat
+checksum is never a DataTree address. Equality of hashes is computational identity
 under SHA-256, not proof that content is available or retained.
 
 Readers validate complete framing before judging an otherwise well-formed id

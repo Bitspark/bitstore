@@ -2,6 +2,7 @@ package bitstore
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 const DataProfile = "deixis-codec-v2/identity-bytes@v0.4.0"
 
 // Root keeps a data address and its interpretation together. It is not a raw
-// blob Name. OpenData validates both and verifies the addressed chunk.
+// blob Name. OpenDataTree validates both and verifies the addressed chunk.
 type Root struct {
 	Profile string `json:"profile"`
 	Address string `json:"address"`
@@ -47,15 +48,15 @@ func limit(dimension string) error {
 	return &CodecError{Class: "resource-refused", Code: "limit_exceeded", Dimension: dimension}
 }
 
-// DataLimits is an application resource policy, not a change to codec validity.
+// DataTreeLimits is an application resource policy, not a change to codec validity.
 // Zero fields select the published portable floors. Smaller explicit limits
 // describe a restricted application profile, not full portable conformance.
-type DataLimits struct {
+type DataTreeLimits struct {
 	KeyBytes, PayloadBytes, Children, ChunkBytes, FlatBytes uint64
 	Depth, Nodes, UniqueChunks, UniqueBytes, UnfoldedBytes  uint64
 }
 
-func (l DataLimits) defaults() DataLimits {
+func (l DataTreeLimits) defaults() DataTreeLimits {
 	fields := []*uint64{&l.KeyBytes, &l.PayloadBytes, &l.Children, &l.ChunkBytes, &l.FlatBytes, &l.Depth, &l.Nodes, &l.UniqueChunks, &l.UniqueBytes, &l.UnfoldedBytes}
 	values := []uint64{4096, 16 << 20, 65536, 32 << 20, 64 << 20, 256, 16777216, 1000000, 1 << 30, 1 << 30}
 	for i, p := range fields {
@@ -78,7 +79,7 @@ type chunk struct {
 type parser struct {
 	b []byte
 	i int
-	l DataLimits
+	l DataTreeLimits
 }
 
 func (p *parser) take(n uint64) ([]byte, error) {
@@ -219,7 +220,7 @@ func (p *parser) key(previous []byte, first bool) ([]byte, error) {
 	return k, nil
 }
 
-func decodeChunk(b []byte, l DataLimits, expectedID []byte) (*chunk, error) {
+func decodeChunk(b []byte, l DataTreeLimits, expectedID []byte) (*chunk, error) {
 	if uint64(len(b)) > l.ChunkBytes {
 		return nil, limit("chunk_octets")
 	}
@@ -299,9 +300,9 @@ func number(b []byte, n uint64) []byte { return binary.AppendUvarint(b, n) }
 func field(b, v []byte) []byte         { b = number(b, uint64(len(v))); return append(b, v...) }
 func header(magic string) []byte       { return append([]byte(magic), 2, 0, 1) }
 
-func checkNode(d *Data, l DataLimits, depth uint64) error {
+func checkNode(d *snapshot, l DataTreeLimits, depth uint64) error {
 	if d == nil {
-		return ErrInvalidData
+		return ErrInvalidDataTree
 	}
 	if depth > l.Depth {
 		return limit("logical_depth")
@@ -321,12 +322,23 @@ func checkNode(d *Data, l DataLimits, depth uint64) error {
 }
 
 // EncodeFlat emits the canonical flat form. A flat checksum is not a data root.
-func EncodeFlat(d *Data, limits DataLimits) ([]byte, error) {
+func EncodeFlat(ctx context.Context, tree DataTree, limits DataTreeLimits) ([]byte, error) {
 	l := limits.defaults()
+	materialLimits := l
+	if materialLimits.UnfoldedBytes > l.FlatBytes {
+		materialLimits.UnfoldedBytes = l.FlatBytes
+	}
+	d, err := materialize(ctx, tree, materialLimits)
+	if err != nil {
+		return nil, err
+	}
 	out := header("dxf2")
 	var nodes uint64
-	var visit func(*Data, uint64) error
-	visit = func(d *Data, depth uint64) error {
+	var visit func(*snapshot, uint64) error
+	visit = func(d *snapshot, depth uint64) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if err := checkNode(d, l, depth); err != nil {
 			return err
 		}
@@ -341,7 +353,7 @@ func EncodeFlat(d *Data, limits DataLimits) ([]byte, error) {
 		}
 		for _, c := range d.children {
 			out = field(out, c.Key)
-			if err := visit(c.Data, depth+1); err != nil {
+			if err := visit(c.Tree, depth+1); err != nil {
 				return err
 			}
 		}
@@ -353,11 +365,14 @@ func EncodeFlat(d *Data, limits DataLimits) ([]byte, error) {
 	if err := visit(d, 0); err != nil {
 		return nil, err
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
 // DecodeFlat accepts only canonical identity-bytes artifacts, with bounded work.
-func DecodeFlat(b []byte, limits DataLimits) (*Data, error) {
+func DecodeFlat(b []byte, limits DataTreeLimits) (DataTree, error) {
 	l := limits.defaults()
 	if uint64(len(b)) > l.FlatBytes {
 		return nil, limit("flat_artifact_octets")
@@ -368,8 +383,8 @@ func DecodeFlat(b []byte, limits DataLimits) (*Data, error) {
 		return nil, err
 	}
 	var nodes uint64
-	var visit func(uint64) (*Data, error)
-	visit = func(depth uint64) (*Data, error) {
+	var visit func(uint64) (*snapshot, error)
+	visit = func(depth uint64) (*snapshot, error) {
 		if depth > l.Depth {
 			return nil, limit("logical_depth")
 		}
@@ -385,7 +400,7 @@ func DecodeFlat(b []byte, limits DataLimits) (*Data, error) {
 		if err != nil {
 			return nil, err
 		}
-		d := &Data{own: bytes.Clone(own)}
+		d := &snapshot{own: bytes.Clone(own)}
 		var prev []byte
 		for i := uint64(0); i < n; i++ {
 			key, err := p.key(prev, i == 0)
@@ -397,7 +412,7 @@ func DecodeFlat(b []byte, limits DataLimits) (*Data, error) {
 			if err != nil {
 				return nil, err
 			}
-			d.children = append(d.children, Child{bytes.Clone(key), child})
+			d.children = append(d.children, snapshotChild{bytes.Clone(key), child})
 		}
 		return d, nil
 	}
