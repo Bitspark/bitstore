@@ -164,3 +164,10 @@ func TestStructuralBudgetRefusesBeforeReadingLargeKeyTree(t *testing.T) {
 		t.Fatal("read payload after structural budget exhausted", reads)
 	}
 }
+
+func TestFlatBudgetCountsSharedChildrenPerOccurrence(t *testing.T) {
+	leaf := node(t, []byte("x"))
+	tree := node(t, nil, bs.Child[bs.Data]{Key: []byte("a"), Tree: leaf}, bs.Child[bs.Data]{Key: []byte("b"), Tree: leaf})
+	_, err := bs.EncodeFlat(context.Background(), tree, bs.DataTreeLimits{UnfoldedBytes: 16})
+	code(t, err, "limit_exceeded")
+}

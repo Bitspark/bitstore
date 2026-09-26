@@ -351,6 +351,9 @@ func EncodeFlat(ctx context.Context, tree DataTree, limits DataTreeLimits) ([]by
 		if uint64(len(out)) > l.FlatBytes {
 			return limit("flat_artifact_octets")
 		}
+		if uint64(len(out)) > l.UnfoldedBytes {
+			return limit("unfolded_flat_octets")
+		}
 		for _, c := range d.children {
 			out = field(out, c.Key)
 			if err := visit(c.Tree, depth+1); err != nil {
@@ -359,6 +362,9 @@ func EncodeFlat(ctx context.Context, tree DataTree, limits DataTreeLimits) ([]by
 		}
 		if uint64(len(out)) > l.FlatBytes {
 			return limit("flat_artifact_octets")
+		}
+		if uint64(len(out)) > l.UnfoldedBytes {
+			return limit("unfolded_flat_octets")
 		}
 		return nil
 	}
