@@ -126,3 +126,9 @@ test('stream upload errors, size refusals and cancellation commit nothing',async
   const abort=new AbortController();const stalled=new ReadableStream({cancel(){cancelled=true}});const promise=s.putStream(stalled,abort.signal);abort.abort();await assert.rejects(promise,{name:'AbortError'});
   const outcomes=await s.putMany([blob,b('0102030405'),b('')]);assert.equal(outcomes[0].name,n);assert.equal(outcomes[1].error.code,'too_large');assert.equal(outcomes[2].size,0);
 });
+
+test('flat unfolded budget counts shared child occurrences',async()=>{
+  const leaf=tree(b('78')),d=tree(b(''),[[b('61'),leaf],[b('62'),leaf]]);
+  await assert.rejects(encodeFlat(d,{unfoldedBytes:16}),e=>e.dimension==='unfolded_flat_octets');
+  await assert.rejects(encodeFlat(tree(),{flatBytes:8}),e=>e.dimension==='flat_artifact_octets');
+});

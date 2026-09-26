@@ -154,7 +154,7 @@ function checkNode(own:Bytes,cs:readonly Child[],depth:number,l:Limits):void {
 }
 export async function encodeFlat(data:DataTree, options:DataTreeLimits={},signal?:AbortSignal):Promise<Bytes> {
   const l=defaults(options),parts:Bytes[]=[header("dxf2")],active=new Set<DataTree>(); let nodes=0,size=7;
-  const add=(b:Bytes)=>{ size+=b.length; if(size>l.flatBytes) limit("flat_artifact_octets"); parts.push(b); };
+  const add=(b:Bytes)=>{ size+=b.length; if(size>l.flatBytes) limit("flat_artifact_octets"); if(size>l.unfoldedBytes) limit("unfolded_flat_octets"); parts.push(b); };
   const visit=async(d:DataTree,depth:number):Promise<void>=>{
     signal?.throwIfAborted(); if(depth>l.depth) limit("logical_depth"); if(active.has(d)) invalid("cyclic_tree");
     if(++nodes>l.nodes) limit("unfolded_node_count"); active.add(d);
