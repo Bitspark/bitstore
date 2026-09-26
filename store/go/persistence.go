@@ -143,7 +143,7 @@ func encodeLinked(ctx context.Context, d *snapshot, l DataTreeLimits) (*encoded,
 // Equal children share a chunk; their full logical expansion is still bounded.
 func EncodeLinked(ctx context.Context, tree DataTree, limits DataTreeLimits) (Root, map[Name][]byte, error) {
 	l := limits.defaults()
-	d, err := materialize(ctx, tree, l)
+	d, err := materialize(ctx, tree, l, "unfolded_flat_octets")
 	if err != nil {
 		return Root{}, nil, err
 	}
@@ -162,7 +162,7 @@ func PutDataTree(ctx context.Context, store Store, tree DataTree, limits DataTre
 		return Root{}, err
 	}
 	l := limits.defaults()
-	d, err := materialize(ctx, tree, l)
+	d, err := materialize(ctx, tree, l, "unfolded_flat_octets")
 	if err != nil {
 		return Root{}, err
 	}

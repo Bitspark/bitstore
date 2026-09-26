@@ -171,3 +171,11 @@ func TestFlatBudgetCountsSharedChildrenPerOccurrence(t *testing.T) {
 	_, err := bs.EncodeFlat(context.Background(), tree, bs.DataTreeLimits{UnfoldedBytes: 16})
 	code(t, err, "limit_exceeded")
 }
+
+func TestFlatMaterializationPreservesLimitDimension(t *testing.T) {
+	_, err := bs.EncodeFlat(context.Background(), node(t, nil), bs.DataTreeLimits{FlatBytes: 8})
+	var fault *bs.CodecError
+	if !errors.As(err, &fault) || fault.Dimension != "flat_artifact_octets" {
+		t.Fatal(err)
+	}
+}

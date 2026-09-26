@@ -187,14 +187,14 @@ func (s *snapshot) Children() []Child[Data] {
 func (s *snapshot) At(path TreePath) (DataTree, bool) { return selectNode[Data](s, path) }
 func (s *snapshot) Decompose() (Data, []Child[Data])  { return s.Own(), s.Children() }
 
-func materialize(ctx context.Context, tree DataTree, l DataTreeLimits) (*snapshot, error) {
+func materialize(ctx context.Context, tree DataTree, l DataTreeLimits, dimension string) (*snapshot, error) {
 	memo := map[DataTree]*snapshot{}
 	active := map[DataTree]bool{}
 	var count uint64
 	total := uint64(len(header("dxf2")))
 	charge := func(n uint64) error {
 		if n > l.UnfoldedBytes || total > l.UnfoldedBytes-n {
-			return limit("unfolded_flat_octets")
+			return limit(dimension)
 		}
 		total += n
 		return nil

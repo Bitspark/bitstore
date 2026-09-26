@@ -325,10 +325,12 @@ func checkNode(d *snapshot, l DataTreeLimits, depth uint64) error {
 func EncodeFlat(ctx context.Context, tree DataTree, limits DataTreeLimits) ([]byte, error) {
 	l := limits.defaults()
 	materialLimits := l
+	dimension := "unfolded_flat_octets"
 	if materialLimits.UnfoldedBytes > l.FlatBytes {
 		materialLimits.UnfoldedBytes = l.FlatBytes
+		dimension = "flat_artifact_octets"
 	}
-	d, err := materialize(ctx, tree, materialLimits)
+	d, err := materialize(ctx, tree, materialLimits, dimension)
 	if err != nil {
 		return nil, err
 	}
