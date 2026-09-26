@@ -1,12 +1,12 @@
 // Package bitstore is the Go SDK of bitstore, content-addressed storage for
-// raw bytes: a blob's name is its SHA-256 digest, so the same bytes always
+// Data, structured DataTree values and raw bytes: a blob's name is its SHA-256 digest, so the same bytes always
 // have the same name and a client that hashes what it receives need not trust
 // where it came from.
 //
 // Store is the semantic interface of the contract's nine verbs (api/SURFACE.md).
 // NewMemory returns an in-memory Store for tests and for composing clients; the
-// filesystem store lives in the store package, and the HTTP client beside the
-// server.
+// HTTP client is public; the deployed filesystem store remains in the private
+// bitstore-svc service.
 package bitstore
 
 import (

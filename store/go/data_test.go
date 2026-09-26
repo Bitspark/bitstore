@@ -22,13 +22,21 @@ func unhex(t *testing.T, s string) []byte {
 	}
 	return b
 }
-func node(t *testing.T, own []byte, cs ...bs.Child) *bs.Data {
+func node(t *testing.T, own []byte, cs ...bs.Child[bs.Data]) bs.DataTree {
 	t.Helper()
-	d, err := bs.NewData(own, cs...)
+	d, err := bs.NewDataTree(bs.BytesData(own), cs...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return d
+}
+func readOwn(t *testing.T, d bs.DataTree) []byte {
+	t.Helper()
+	b, err := d.Own().Read(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
 }
 func code(t *testing.T, err error, want string) {
 	t.Helper()
@@ -57,15 +65,15 @@ func TestDataFixtures(t *testing.T) {
 	for _, v := range file.Vectors {
 		t.Run(v.Label, func(t *testing.T) {
 			flat := unhex(t, v.Flat)
-			d, err := bs.DecodeFlat(flat, bs.DataLimits{})
+			d, err := bs.DecodeFlat(flat, bs.DataTreeLimits{})
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := bs.EncodeFlat(d, bs.DataLimits{})
+			got, err := bs.EncodeFlat(context.Background(), d, bs.DataTreeLimits{})
 			if err != nil || !bytes.Equal(got, flat) {
 				t.Fatalf("flat %x, %v", got, err)
 			}
-			root, chunks, err := bs.EncodeLinked(d, bs.DataLimits{})
+			root, chunks, err := bs.EncodeLinked(context.Background(), d, bs.DataTreeLimits{})
 			if err != nil || root != v.Root {
 				t.Fatalf("root %v, %v", root, err)
 			}
@@ -84,60 +92,63 @@ func TestDataFixtures(t *testing.T) {
 					t.Fatal("fixture hash", err)
 				}
 			}
-			d, err = bs.LoadData(ctx, store, v.Root, bs.DataLimits{})
+			d, err = bs.LoadDataTree(ctx, store, v.Root, bs.DataTreeLimits{})
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err = bs.EncodeFlat(d, bs.DataLimits{})
+			got, err = bs.EncodeFlat(context.Background(), d, bs.DataTreeLimits{})
 			if err != nil || !bytes.Equal(got, flat) {
 				t.Fatal("reconstruction", err)
 			}
 		})
 	}
 	for _, v := range file.InvalidFlat {
-		t.Run(v.Label, func(t *testing.T) { _, err := bs.DecodeFlat(unhex(t, v.Hex), bs.DataLimits{}); code(t, err, v.Code) })
+		t.Run(v.Label, func(t *testing.T) {
+			_, err := bs.DecodeFlat(unhex(t, v.Hex), bs.DataTreeLimits{})
+			code(t, err, v.Code)
+		})
 	}
 }
 
 func TestExactDataAndReconstruction(t *testing.T) {
 	own, key := []byte{7}, []byte{255}
 	leaf := node(t, nil)
-	d := node(t, own, bs.Child{Key: key, Data: leaf}, bs.Child{Key: nil, Data: leaf})
+	d := node(t, own, bs.Child[bs.Data]{Key: key, Tree: leaf}, bs.Child[bs.Data]{Key: nil, Tree: leaf})
 	own[0] = 9
 	key[0] = 1
-	if !bytes.Equal(d.Own(), []byte{7}) {
+	if !bytes.Equal(readOwn(t, d), []byte{7}) {
 		t.Fatal("own aliases input")
 	}
-	out := d.Own()
+	out := readOwn(t, d)
 	out[0] = 8
 	cs := d.Children()
 	cs[1].Key[0] = 1
-	if got, ok := d.At([]byte{255}); !ok || got != leaf {
+	if got, ok := d.At(bs.TreePath{{255}}); !ok || got != leaf {
 		t.Fatal("key aliases input/output")
 	}
-	if got, ok := d.At(); !ok || got != d {
+	if got, ok := d.At(nil); !ok || got != d {
 		t.Fatal("empty path")
 	}
-	if got, ok := d.At(nil); !ok || got != leaf {
+	if got, ok := d.At(bs.TreePath{nil}); !ok || got != leaf {
 		t.Fatal("empty key")
 	}
-	if _, ok := d.At([]byte{1}); ok {
+	if _, ok := d.At(bs.TreePath{{1}}); ok {
 		t.Fatal("missing invented")
 	}
-	rebuilt := node(t, d.Own(), d.Children()...)
-	a, _ := bs.EncodeFlat(d, bs.DataLimits{})
-	b, _ := bs.EncodeFlat(rebuilt, bs.DataLimits{})
+	rebuilt := node(t, readOwn(t, d), d.Children()...)
+	a, _ := bs.EncodeFlat(context.Background(), d, bs.DataTreeLimits{})
+	b, _ := bs.EncodeFlat(context.Background(), rebuilt, bs.DataTreeLimits{})
 	if !bytes.Equal(a, b) {
 		t.Fatal("reconstruction law")
 	}
-	if _, err := bs.NewData(nil, bs.Child{Data: leaf}, bs.Child{Data: leaf}); !errors.Is(err, bs.ErrInvalidData) {
+	if _, err := bs.NewDataTree(bs.BytesData(nil), bs.Child[bs.Data]{Tree: leaf}, bs.Child[bs.Data]{Tree: leaf}); !errors.Is(err, bs.ErrInvalidDataTree) {
 		t.Fatal("duplicate", err)
 	}
-	if _, err := bs.NewData(nil, bs.Child{}); !errors.Is(err, bs.ErrInvalidData) {
+	if _, err := bs.NewDataTree(bs.BytesData(nil), bs.Child[bs.Data]{}); !errors.Is(err, bs.ErrInvalidDataTree) {
 		t.Fatal("nil", err)
 	}
-	var zero bs.Data
-	if len(zero.Own()) != 0 || len(zero.Children()) != 0 {
+	zero := node(t, nil)
+	if len(readOwn(t, zero)) != 0 || len(zero.Children()) != 0 {
 		t.Fatal("zero leaf")
 	}
 }
@@ -171,12 +182,12 @@ func TestLazyPathsIntegrityAbsenceAndReopen(t *testing.T) {
 	ctx := context.Background()
 	store := &observedStore{Store: bs.NewMemory(0)}
 	leaf := node(t, []byte("leaf"))
-	d := node(t, []byte("parent"), bs.Child{Key: nil, Data: node(t, nil, bs.Child{Key: []byte{255}, Data: leaf})}, bs.Child{Key: []byte("sibling"), Data: leaf})
-	root, err := bs.PutData(ctx, store, d, bs.DataLimits{})
+	d := node(t, []byte("parent"), bs.Child[bs.Data]{Key: nil, Tree: node(t, nil, bs.Child[bs.Data]{Key: []byte{255}, Tree: leaf})}, bs.Child[bs.Data]{Key: []byte("sibling"), Tree: leaf})
+	root, err := bs.PutDataTree(ctx, store, d, bs.DataTreeLimits{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := bs.OpenData(ctx, store, root, bs.DataLimits{})
+	v, err := bs.OpenDataTree(ctx, store, root, bs.DataTreeLimits{})
 	if err != nil || len(store.reads) != 1 {
 		t.Fatal("root not lazy", err)
 	}
@@ -196,16 +207,16 @@ func TestLazyPathsIntegrityAbsenceAndReopen(t *testing.T) {
 	}
 	store.missing = ""
 	store.corrupt = true
-	if _, err := bs.OpenData(ctx, store, root, bs.DataLimits{}); !errors.Is(err, bs.ErrIntegrity) {
+	if _, err := bs.OpenDataTree(ctx, store, root, bs.DataTreeLimits{}); !errors.Is(err, bs.ErrIntegrity) {
 		t.Fatal("corrupt", err)
 	}
 	store.corrupt = false
 	store.lie = true
-	if _, err := bs.PutData(ctx, store, d, bs.DataLimits{}); !errors.Is(err, bs.ErrIntegrity) {
+	if _, err := bs.PutDataTree(ctx, store, d, bs.DataTreeLimits{}); !errors.Is(err, bs.ErrIntegrity) {
 		t.Fatal("lying put", err)
 	}
 	root.Profile = "future"
-	_, err = bs.OpenData(ctx, store, root, bs.DataLimits{})
+	_, err = bs.OpenDataTree(ctx, store, root, bs.DataTreeLimits{})
 	code(t, err, "unsupported_profile")
 }
 
@@ -224,7 +235,7 @@ func TestLinkedFramingAndPrecedence(t *testing.T) {
 	for _, c := range cases {
 		b := unhex(t, c.hex)
 		n, _ := s.Put(ctx, b)
-		_, err := bs.OpenData(ctx, s, bs.Root{Profile: bs.DataProfile, Address: "dxl2:" + n.Digest()}, bs.DataLimits{})
+		_, err := bs.OpenDataTree(ctx, s, bs.Root{Profile: bs.DataProfile, Address: "dxl2:" + n.Digest()}, bs.DataTreeLimits{})
 		code(t, err, c.code)
 	}
 	// Parent is supported; child has a different, unsupported id and a bad body.
@@ -234,7 +245,7 @@ func TestLinkedFramingAndPrecedence(t *testing.T) {
 		n, _ := s.Put(ctx, child)
 		parent := unhex(t, "64786c3202000101"+n.Digest()+"00010000")
 		pn, _ := s.Put(ctx, parent)
-		v, err := bs.OpenData(ctx, s, bs.Root{Profile: bs.DataProfile, Address: "dxl2:" + pn.Digest()}, bs.DataLimits{})
+		v, err := bs.OpenDataTree(ctx, s, bs.Root{Profile: bs.DataProfile, Address: "dxl2:" + pn.Digest()}, bs.DataTreeLimits{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -248,28 +259,28 @@ func TestBoundsCancellationAndSharing(t *testing.T) {
 	s := &observedStore{Store: bs.NewMemory(0)}
 	d := node(t, []byte("own"))
 	for i := 0; i < 12; i++ {
-		d = node(t, nil, bs.Child{Key: []byte{0}, Data: d}, bs.Child{Key: []byte{1}, Data: d})
+		d = node(t, nil, bs.Child[bs.Data]{Key: []byte{0}, Tree: d}, bs.Child[bs.Data]{Key: []byte{1}, Tree: d})
 	}
-	root, err := bs.PutData(ctx, s, d, bs.DataLimits{})
+	root, err := bs.PutDataTree(ctx, s, d, bs.DataTreeLimits{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = bs.LoadData(ctx, s, root, bs.DataLimits{Nodes: 100})
+	_, err = bs.LoadDataTree(ctx, s, root, bs.DataTreeLimits{Nodes: 100})
 	code(t, err, "limit_exceeded")
 	if len(s.reads) > 13 {
 		t.Fatal("shared chunks fetched repeatedly")
 	}
-	_, _, err = bs.EncodeLinked(d, bs.DataLimits{Nodes: 100})
+	_, _, err = bs.EncodeLinked(context.Background(), d, bs.DataTreeLimits{Nodes: 100})
 	code(t, err, "limit_exceeded")
-	_, err = bs.LoadData(ctx, s, root, bs.DataLimits{UniqueChunks: 2})
+	_, err = bs.LoadDataTree(ctx, s, root, bs.DataTreeLimits{UniqueChunks: 2})
 	code(t, err, "limit_exceeded")
-	_, err = bs.LoadData(ctx, s, root, bs.DataLimits{ChunkBytes: 8})
+	_, err = bs.LoadDataTree(ctx, s, root, bs.DataTreeLimits{ChunkBytes: 8})
 	code(t, err, "limit_exceeded")
-	_, err = bs.EncodeFlat(d, bs.DataLimits{Depth: 2})
+	_, err = bs.EncodeFlat(context.Background(), d, bs.DataTreeLimits{Depth: 2})
 	code(t, err, "limit_exceeded")
 	cancelled, cancel := context.WithCancel(ctx)
 	cancel()
-	_, err = bs.PutData(cancelled, s, d, bs.DataLimits{})
+	_, err = bs.PutDataTree(cancelled, s, d, bs.DataTreeLimits{})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
@@ -278,11 +289,11 @@ func TestBoundsCancellationAndSharing(t *testing.T) {
 func FuzzDecodeFlat(f *testing.F) {
 	f.Add([]byte("dxf2\x02\x00\x01\x00\x00"))
 	f.Fuzz(func(t *testing.T, b []byte) {
-		d, err := bs.DecodeFlat(b, bs.DataLimits{FlatBytes: 4096, PayloadBytes: 4096, Children: 64, Depth: 32, Nodes: 256})
+		d, err := bs.DecodeFlat(b, bs.DataTreeLimits{FlatBytes: 4096, PayloadBytes: 4096, Children: 64, Depth: 32, Nodes: 256})
 		if err != nil {
 			return
 		}
-		out, err := bs.EncodeFlat(d, bs.DataLimits{})
+		out, err := bs.EncodeFlat(context.Background(), d, bs.DataTreeLimits{})
 		if err != nil || !bytes.Equal(out, b) {
 			t.Fatalf("accepted noncanonical input: %x", b)
 		}

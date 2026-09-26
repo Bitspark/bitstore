@@ -1,7 +1,7 @@
 {
   "name": "@bitspark/bitstore",
-  "version": "0.1.0",
-  "description": "Bytes, structured Data and content-addressed Store contracts.",
+  "version": "0.2.0",
+  "description": "Data, DataTree and content-addressed Store contracts.",
   "license": "Apache-2.0",
   "type": "module",
   "repository": { "type": "git", "url": "git+https://github.com/Bitspark/bitstore.git", "directory": "store/ts" },

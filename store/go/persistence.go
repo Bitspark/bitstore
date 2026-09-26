@@ -21,7 +21,7 @@ func varsize(n uint64) uint64 {
 func ownMeasure(own []byte, count int) measure {
 	return measure{nodes: 1, octets: varsize(uint64(len(own))) + uint64(len(own)) + varsize(uint64(count))}
 }
-func (m *measure) add(key []byte, child measure, l DataLimits) error {
+func (m *measure) add(key []byte, child measure, l DataTreeLimits) error {
 	if child.nodes > l.Nodes || m.nodes > l.Nodes-child.nodes {
 		return limit("unfolded_node_count")
 	}
@@ -39,7 +39,7 @@ func (m *measure) add(key []byte, child measure, l DataLimits) error {
 	}
 	return nil
 }
-func (m measure) check(l DataLimits) error {
+func (m measure) check(l DataTreeLimits) error {
 	if m.nodes > l.Nodes {
 		return limit("unfolded_node_count")
 	}
@@ -55,16 +55,19 @@ type encoded struct {
 	order  []Name
 }
 
-func encodeLinked(d *Data, l DataLimits) (*encoded, error) {
+func encodeLinked(ctx context.Context, d *snapshot, l DataTreeLimits) (*encoded, error) {
 	e := &encoded{chunks: map[Name][]byte{}}
 	type entry struct {
 		name Name
 		m    measure
 	}
-	memo := map[*Data]entry{}
+	memo := map[*snapshot]entry{}
 	var total uint64
-	var visit func(*Data, uint64) (entry, error)
-	visit = func(d *Data, depth uint64) (entry, error) {
+	var visit func(*snapshot, uint64) (entry, error)
+	visit = func(d *snapshot, depth uint64) (entry, error) {
+		if err := ctx.Err(); err != nil {
+			return entry{}, err
+		}
 		if err := checkNode(d, l, depth); err != nil {
 			return entry{}, err
 		}
@@ -81,7 +84,7 @@ func encodeLinked(d *Data, l DataLimits) (*encoded, error) {
 		body = field(body, d.own)
 		body = number(body, uint64(len(d.children)))
 		for _, c := range d.children {
-			child, err := visit(c.Data, depth+1)
+			child, err := visit(c.Tree, depth+1)
 			if err != nil {
 				return entry{}, err
 			}
@@ -130,27 +133,40 @@ func encodeLinked(d *Data, l DataLimits) (*encoded, error) {
 		return nil, err
 	}
 	e.root = rootOf(r.name)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return e, nil
 }
 
 // EncodeLinked emits canonical linked chunks, keyed by their raw storage names.
 // Equal children share a chunk; their full logical expansion is still bounded.
-func EncodeLinked(d *Data, limits DataLimits) (Root, map[Name][]byte, error) {
-	e, err := encodeLinked(d, limits.defaults())
+func EncodeLinked(ctx context.Context, tree DataTree, limits DataTreeLimits) (Root, map[Name][]byte, error) {
+	l := limits.defaults()
+	d, err := materialize(ctx, tree, l, "unfolded_flat_octets")
+	if err != nil {
+		return Root{}, nil, err
+	}
+	e, err := encodeLinked(ctx, d, l)
 	if err != nil {
 		return Root{}, nil, err
 	}
 	return e.root, e.chunks, nil
 }
 
-// PutData writes immutable chunks leaves first and acknowledges a root only after
+// PutDataTree writes immutable chunks leaves first and acknowledges a root only after
 // every put succeeds under its expected name. Failure can leave harmless orphan
 // chunks. Publishing/naming a root or doing CAS is an application responsibility.
-func PutData(ctx context.Context, store Store, d *Data, limits DataLimits) (Root, error) {
+func PutDataTree(ctx context.Context, store Store, tree DataTree, limits DataTreeLimits) (Root, error) {
 	if err := ctx.Err(); err != nil {
 		return Root{}, err
 	}
-	e, err := encodeLinked(d, limits.defaults())
+	l := limits.defaults()
+	d, err := materialize(ctx, tree, l, "unfolded_flat_octets")
+	if err != nil {
+		return Root{}, err
+	}
+	e, err := encodeLinked(ctx, d, l)
 	if err != nil {
 		return Root{}, err
 	}
@@ -173,18 +189,18 @@ type ChildRoot struct {
 	Root Root
 }
 
-// View is a verified node with lazy, path-relative access to whole child values.
+// DataTreeView is a verified node with lazy, path-relative access to whole child values.
 // Its immutable observations can be shared concurrently if the Store can.
-type View struct {
+type DataTreeView struct {
 	root   Root
 	store  Store
-	limits DataLimits
+	limits DataTreeLimits
 	chunk  *chunk
 }
 
-func (v *View) Root() Root { return v.root }
-func (v *View) Own() Bytes { return bytes.Clone(v.chunk.own) }
-func (v *View) Children() []ChildRoot {
+func (v *DataTreeView) Root() Root { return v.root }
+func (v *DataTreeView) Own() Bytes { return bytes.Clone(v.chunk.own) }
+func (v *DataTreeView) Children() []ChildRoot {
 	cs := make([]ChildRoot, len(v.chunk.children))
 	for i, c := range v.chunk.children {
 		cs[i] = ChildRoot{bytes.Clone(c.key), rootOf(c.name)}
@@ -192,7 +208,7 @@ func (v *View) Children() []ChildRoot {
 	return cs
 }
 
-func fetchChunk(ctx context.Context, store Store, name Name, l DataLimits, expectedID []byte) (*chunk, uint64, error) {
+func fetchChunk(ctx context.Context, store Store, name Name, l DataTreeLimits, expectedID []byte) (*chunk, uint64, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, 0, err
 	}
@@ -224,9 +240,9 @@ func fetchChunk(ctx context.Context, store Store, name Name, l DataLimits, expec
 	return c, uint64(len(b)), err
 }
 
-// OpenData fetches and verifies just the root. Availability of its closure is
-// checked by LoadData, or one selected path at a time through View.At.
-func OpenData(ctx context.Context, store Store, root Root, limits DataLimits) (*View, error) {
+// OpenDataTree fetches and verifies just the root. Availability of its closure is
+// checked by LoadDataTree, or one selected path at a time through DataTreeView.At.
+func OpenDataTree(ctx context.Context, store Store, root Root, limits DataTreeLimits) (*DataTreeView, error) {
 	name, err := root.name()
 	if err != nil {
 		return nil, err
@@ -236,14 +252,14 @@ func OpenData(ctx context.Context, store Store, root Root, limits DataLimits) (*
 	if err != nil {
 		return nil, err
 	}
-	return &View{root, store, l, c}, nil
+	return &DataTreeView{root, store, l, c}, nil
 }
 
 // At resolves relative to this view. false,nil means no such child; a missing
 // chunk instead returns ErrNotFound, and corrupt bytes return ErrIntegrity.
 // Empty path is this node and does not fetch. Each opened subtree resets the
 // traversal budget, as a relative root in its own right.
-func (v *View) At(ctx context.Context, path ...Bytes) (*View, bool, error) {
+func (v *DataTreeView) At(ctx context.Context, path ...Bytes) (*DataTreeView, bool, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, false, err
 	}
@@ -265,22 +281,22 @@ func (v *View) At(ctx context.Context, path ...Bytes) (*View, bool, error) {
 		if err != nil {
 			return nil, false, err
 		}
-		v = &View{rootOf(name), v.store, v.limits, c}
+		v = &DataTreeView{rootOf(name), v.store, v.limits, c}
 	}
 	return v, true, nil
 }
 
-// LoadData verifies the complete reachable closure and reconstructs its value.
+// LoadDataTree verifies the complete reachable closure and reconstructs its value.
 // Shared chunks are fetched once, but logical expansion, including all copies
 // of a shared child, is counted before the result is returned.
-func LoadData(ctx context.Context, store Store, root Root, limits DataLimits) (*Data, error) {
+func LoadDataTree(ctx context.Context, store Store, root Root, limits DataTreeLimits) (DataTree, error) {
 	name, err := root.name()
 	if err != nil {
 		return nil, err
 	}
 	l := limits.defaults()
 	type entry struct {
-		d *Data
+		d *snapshot
 		m measure
 	}
 	memo := map[Name]entry{}
@@ -316,7 +332,7 @@ func LoadData(ctx context.Context, store Store, root Root, limits DataLimits) (*
 		total += size
 		// Reserve the unique chunk before descent, including long single-child paths.
 		memo[name] = entry{}
-		d := &Data{own: c.own}
+		d := &snapshot{own: c.own}
 		m := ownMeasure(c.own, len(c.children))
 		for _, child := range c.children {
 			e, err := visit(child.name, depth+1)
@@ -329,7 +345,7 @@ func LoadData(ctx context.Context, store Store, root Root, limits DataLimits) (*
 			if err := m.add(child.key, e.m, l); err != nil {
 				return entry{}, err
 			}
-			d.children = append(d.children, Child{child.key, e.d})
+			d.children = append(d.children, snapshotChild{child.key, e.d})
 		}
 		if err := m.check(l); err != nil {
 			return entry{}, err

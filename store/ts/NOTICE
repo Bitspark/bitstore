@@ -3,6 +3,7 @@ Copyright 2026 Bitspark
 
 The raw Go SDK and Store conformance originated in Bitspark/bitstore-svc
 at commit 5bd2fa2. They are published here with the owner's authorization.
-New Data bindings implement the identity-bytes specialization of the Deixis
+DataTree bindings materialize Data.read content through the identity-bytes
+specialization of the Deixis
 v0.4.0 candidate codec (commit 75a84d901396739cb9942afef50682540ec0857d).
 This release does not freeze that codec or claim clean-room independence.

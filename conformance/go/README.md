@@ -18,7 +18,7 @@ conformance.RunStore(t, func(t *testing.T) conformance.Subject {
 })
 ```
 
-Data grammar fixtures live in `vectors/data.json`, outside either native
+DataTree grammar fixtures live in `vectors/data.json`, outside either native
 implementation. Go/TypeScript tests check expected bytes and failures, lazy
 paths, exact keys, reconstruction and deliberately lying stores. The native
 interchange script exchanges complete artifacts between independently compiled

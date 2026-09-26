@@ -1,9 +1,23 @@
 # Release and evidence
 
 The library version, raw contract date (`2026-09-24`), administration contract
-date (`2026-09-25`), Bytes backend profile version (`1`), and Data codec profile
+date (`2026-09-25`), Bytes backend profile version (`1`), and DataTree codec profile
 (`deixis-codec-v2/identity-bytes@v0.4.0`) have separate identities. A library
 release cannot silently freeze or replace the candidate codec profile.
+
+## v0.2.0 API migration
+
+This breaking native release adopts `Data` for addressless reading and the
+literal `DataTree = DeixisNode<Data>` specialization, symmetric with Bitwire's
+`Wire` / `WireTree`. Both expose the complete Deixis structural contract.
+Old `Data` tree aliases are removed. Encoders materialize fixed-content readers
+with explicit failure/cancellation; serialized bytes and qualified addresses
+remain identical to v0.1.0. No published release or codec profile is rewritten.
+
+New tests exercise pure composition without reads, complete reconstruction and
+selection, independent structural implementations, reader failure distinct from
+missing nodes, immutable byte buffers, cycle refusal and cancellation before
+persistence. The existing golden flat/linked artifacts remain unchanged.
 
 ## Validation
 
@@ -17,7 +31,7 @@ expansion of shared graphs. Cancellation and interrupted uploads commit nothing.
 
 Go/TypeScript interchange compares complete canonical chunks and roots for the
 fixed grammar corpus and twelve constructed trees. A fresh process outside the
-checkout installs the packed TypeScript artifact and stores/loads a Data value.
+checkout installs the packed TypeScript artifact and stores/loads a DataTree value.
 CI runs formatting, Go vet/tests on Linux and Windows, Linux race tests,
 TypeScript checking/build/tests, interchange and the packed consumer.
 

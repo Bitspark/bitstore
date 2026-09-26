@@ -15,8 +15,8 @@ publishes this document under its existing `/describe/{file...}` facility.
 The advertisement commits to all nine raw Store operations and the contract
 and HTTP binding in `docs/raw/`, including content identity, plural absence,
 stream commit rules, per-item batch outcomes, and integrity-verifiable full
-reads. It does not claim that the service interprets or retains a Data graph.
-Data clients store their canonical chunks as ordinary opaque blobs.
+reads. It does not claim that the service interprets or retains a DataTree graph.
+DataTree clients store their canonical chunks as ordinary opaque blobs.
 
 Discovery starts from an explicitly configured operations base URL, preserving
 its deployment prefix. It retrieves `/describe`, selects a supported profile
@@ -32,7 +32,8 @@ or path guessing; they cannot satisfy this profile.
 may instantiate `Client` directly against an older, unadvertised compatible
 service. No discovery request is needed for an in-process Store.
 
-Shared discovery of both End and Bytes by one generic Deixis service remains
+Shared discovery of both Wire and Data by one generic Deixis service remains
 the cross-backend service-contract integration. This document implements and
 versions the storage adapter seam; it does not claim that the generic service
-or the End adapter has shipped.
+or the Wire adapter has shipped. The raw `bitstore/bytes` profile identifier
+continues to describe persistence, not the generic Data reading capability.
