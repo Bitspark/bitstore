@@ -1,0 +1,112 @@
+{
+  "provenance": "Hand-authored from identity-bytes grammar; SHA-256 computed with node:crypto, not Bitstore.",
+  "vectors": [
+    {
+      "label": "empty mandatory own and no children",
+      "flat": "647866320200010000",
+      "root": {
+        "profile": "deixis-codec-v2/identity-bytes@v0.4.0",
+        "address": "dxl2:a9677a54bc70bd0072953ec21471ff76b5e357c6b8bd25ee89db2d045b268009"
+      },
+      "chunks": {
+        "sha256:a9677a54bc70bd0072953ec21471ff76b5e357c6b8bd25ee89db2d045b268009": "64786c32020001000000"
+      }
+    },
+    {
+      "label": "opaque ff own bytes",
+      "flat": "6478663202000101ff00",
+      "root": {
+        "profile": "deixis-codec-v2/identity-bytes@v0.4.0",
+        "address": "dxl2:696a438d16338108b397909b6153c99a103f46f2b7875b7785b834df0cf475eb"
+      },
+      "chunks": {
+        "sha256:696a438d16338108b397909b6153c99a103f46f2b7875b7785b834df0cf475eb": "64786c320200010001ff00"
+      }
+    },
+    {
+      "label": "empty key, binary keys and repeated whole child",
+      "flat": "64786632020001017203000000010001ff0001ff01ff00",
+      "root": {
+        "profile": "deixis-codec-v2/identity-bytes@v0.4.0",
+        "address": "dxl2:3c69131e6f101cd1d7a7b489b8a72f1a06b5e16ab3916751a8974909fe34dfb8"
+      },
+      "chunks": {
+        "sha256:a9677a54bc70bd0072953ec21471ff76b5e357c6b8bd25ee89db2d045b268009": "64786c32020001000000",
+        "sha256:696a438d16338108b397909b6153c99a103f46f2b7875b7785b834df0cf475eb": "64786c320200010001ff00",
+        "sha256:3c69131e6f101cd1d7a7b489b8a72f1a06b5e16ab3916751a8974909fe34dfb8": "64786c3202000102a9677a54bc70bd0072953ec21471ff76b5e357c6b8bd25ee89db2d045b268009696a438d16338108b397909b6153c99a103f46f2b7875b7785b834df0cf475eb017203000001000101ff01"
+      }
+    }
+  ],
+  "invalidFlat": [
+    {
+      "label": "short magic",
+      "hex": "64",
+      "code": "unexpected_eof"
+    },
+    {
+      "label": "wrong magic",
+      "hex": "000000000200010000",
+      "code": "unknown_magic"
+    },
+    {
+      "label": "cut off varint",
+      "hex": "6478663280",
+      "code": "malformed_uvarint"
+    },
+    {
+      "label": "non shortest length",
+      "hex": "64786632820000010000",
+      "code": "non_shortest_uvarint"
+    },
+    {
+      "label": "overflow length",
+      "hex": "64786632ffffffffffffffffff02",
+      "code": "uvarint_overflow"
+    },
+    {
+      "label": "overlong varint",
+      "hex": "647866328080808080808080808000",
+      "code": "malformed_uvarint"
+    },
+    {
+      "label": "public zero id",
+      "hex": "647866320200000000",
+      "code": "malformed_slot_codec_id"
+    },
+    {
+      "label": "bounded id cut integer",
+      "hex": "647866320200800000",
+      "code": "malformed_uvarint"
+    },
+    {
+      "label": "unsupported id malformed body",
+      "hex": "6478663202000201",
+      "code": "unexpected_eof"
+    },
+    {
+      "label": "unsupported id canonical body",
+      "hex": "647866320200020000",
+      "code": "unsupported_slot_codec"
+    },
+    {
+      "label": "duplicate empty keys",
+      "hex": "647866320200010002000000000000",
+      "code": "duplicate_key"
+    },
+    {
+      "label": "unsorted binary keys",
+      "hex": "64786632020001000201ff000001000000",
+      "code": "unsorted_keys"
+    },
+    {
+      "label": "trailing bytes",
+      "hex": "64786632020001000000",
+      "code": "trailing_bytes"
+    },
+    {
+      "label": "truncated framed key wins over ordering",
+      "hex": "64786632020001000201ff00000200",
+      "code": "unexpected_eof"
+    }
+  ]
+}

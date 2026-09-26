@@ -1,0 +1,15 @@
+{
+  "name": "@bitspark/bitstore",
+  "version": "0.1.0",
+  "description": "Bytes, structured Data and content-addressed Store contracts.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": { "type": "git", "url": "git+https://github.com/Bitspark/bitstore.git", "directory": "store/ts" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md", "LICENSE", "NOTICE"],
+  "sideEffects": false,
+  "publishConfig": { "registry": "https://registry.npmjs.org", "access": "public" },
+  "scripts": { "check": "tsc --noEmit", "build": "tsc", "test": "node --test test/*.test.mjs" },
+  "devDependencies": { "typescript": "5.9.3" }
+}

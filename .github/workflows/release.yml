@@ -1,0 +1,42 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: store/ts/package-lock.json
+      - name: Verify version
+        run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./store/ts/package.json').version")"
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+      - run: npm ci --ignore-scripts && npm run check && npm run build && npm test
+        working-directory: store/ts
+      - run: node scripts/interop.mjs
+      - run: node scripts/package-smoke.mjs
+      - name: Pack release
+        run: |
+          mkdir release
+          npm pack ./store/ts --pack-destination release
+          cd release
+          sha256sum *.tgz > SHA256SUMS
+      - name: Publish immutable source and package artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --title "Bitstore $GITHUB_REF_NAME" --notes-file docs/RELEASE.md release/*

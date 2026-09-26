@@ -1,0 +1,73 @@
+{
+  "service": "bitstore",
+  "contract": "2026-09-25",
+  "doc": "The management surface's operation table: the administration baseline, the four operational routes of the bit-services standard and no verb. SURFACE.md is the contract where this table is silent.",
+  "surface": "SURFACE.md",
+  "bindings": {
+    "primary": "http",
+    "http": "HTTP.md"
+  },
+  "refusals": [
+    {
+      "name": "not_found",
+      "http": 404,
+      "meaning": "no such route, or no such contract file"
+    }
+  ],
+  "operations": [
+    {
+      "name": "livez",
+      "kind": "operational",
+      "doc": "the process is up",
+      "response": "Health",
+      "errors": [],
+      "http": {
+        "method": "GET",
+        "path": "/livez"
+      }
+    },
+    {
+      "name": "healthz",
+      "kind": "operational",
+      "doc": "the management listener can serve its contract",
+      "response": "Health",
+      "errors": [],
+      "http": {
+        "method": "GET",
+        "path": "/healthz"
+      }
+    },
+    {
+      "name": "describe",
+      "kind": "operational",
+      "doc": "the management surface's description",
+      "response": "Describe",
+      "errors": [],
+      "http": {
+        "method": "GET",
+        "path": "/describe"
+      }
+    },
+    {
+      "name": "describe_file",
+      "kind": "operational",
+      "doc": "one management contract file, byte for byte",
+      "params": [
+        {
+          "name": "file",
+          "type": "string",
+          "required": true,
+          "doc": "a name describe.files lists"
+        }
+      ],
+      "response": "file",
+      "errors": [
+        "not_found"
+      ],
+      "http": {
+        "method": "GET",
+        "path": "/describe/{file...}"
+      }
+    }
+  ]
+}

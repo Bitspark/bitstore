@@ -12,9 +12,28 @@ storage.
 The model name **Bitdata** denotes `Data`. It is the data counterpart of
 Bitwire's addressed `Wire` over the addressless `End` primitive.
 
-**Status:** implementation is in progress. The existing blob service and SDK are
-being migrated to this public contract. No release or completed storage
-integration is claimed by this initial charter.
+Go and TypeScript implement the model, canonical flat and linked codecs, lazy
+verified reads, bounded reconstruction, raw Store interfaces, memory backends,
+HTTP clients and explicit Bytes backend discovery. The deployed service and
+filesystem backend remain in private `bitstore-svc`.
+
+The first release is **v0.1.0**. Its data codec is an explicitly pinned
+**candidate** profile, not a frozen identity standard. Save the complete
+`{profile,address}` root. Raw blob names and the dated raw contract are unchanged.
+
+```sh
+go get github.com/Bitspark/bitstore@v0.1.0
+npm install https://github.com/Bitspark/bitstore/releases/download/v0.1.0/bitspark-bitstore-0.1.0.tgz
+```
+
+The npm-compatible artifact is distributed by the GitHub release. An npmjs
+registry publication is a separate delivery and is not claimed here.
+
+- [Go usage](store/go/README.md) and [TypeScript usage](store/ts/README.md)
+- [Model, codec profile and limits](docs/DATA.md)
+- [Raw Store contract](docs/raw/SURFACE.md) and [HTTP binding](docs/raw/HTTP.md)
+- [Bytes backend discovery](docs/BYTES-PROFILE.md)
+- [Reusable conformance](conformance/go/README.md) and [release evidence](docs/RELEASE.md)
 
 Read [CHARTER.md](CHARTER.md) for ownership and [LAYOUT.md](LAYOUT.md) for source
 organization.
