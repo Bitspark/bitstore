@@ -23,8 +23,8 @@ send(tree, path, message) = select(tree, path).own().send(message)
 Missing paths are structural absence, separate from read failures or message
 refusals at existing nodes. Byte keys include empty and non-UTF-8 values.
 
-CI holds this DataTree to the 19 structure cases bitwire authored for WireTree,
-pinned at bitwire `3b237aa`, in Go and TypeScript. Deliberately unlawful trees
+CI holds this DataTree to the 20 structure cases bitwire authored for WireTree,
+pinned at bitwire `a13d0f8`, in Go and TypeScript. Deliberately unlawful trees
 must fail them. See [shared structural evidence](docs/TREES.md).
 
 Go and TypeScript implement the model, canonical flat and linked codecs, lazy
