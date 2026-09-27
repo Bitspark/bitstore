@@ -32,14 +32,15 @@ verified reads, bounded reconstruction, raw Store interfaces, memory backends,
 HTTP clients and explicit Bytes backend discovery. The deployed service and
 filesystem backend remain in private `bitstore-svc`.
 
-The current native API is **v0.2.0**, a breaking replacement of v0.1.0's
-`Data` tree class with the primitive and explicit `DataTree`. Its data codec is an explicitly pinned
+The current native release is **v0.2.1**. Its API is v0.2.0's, a breaking
+replacement of v0.1.0's `Data` tree class with the primitive and explicit
+`DataTree`; v0.2.1 makes construction refuse cycles and non-byte keys. Its data codec is an explicitly pinned
 **candidate** profile, not a frozen identity standard. Save the complete
 `{profile,address}` root. Raw blob names and the dated raw contract are unchanged.
 
 ```sh
-go get github.com/Bitspark/bitstore@v0.2.0
-npm install https://github.com/Bitspark/bitstore/releases/download/v0.2.0/bitspark-bitstore-0.2.0.tgz
+go get github.com/Bitspark/bitstore@v0.2.1
+npm install https://github.com/Bitspark/bitstore/releases/download/v0.2.1/bitspark-bitstore-0.2.1.tgz
 ```
 
 The npm-compatible artifact is distributed by the GitHub release. An npmjs
