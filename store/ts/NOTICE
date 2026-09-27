@@ -10,6 +10,6 @@ This release does not freeze that codec or claim clean-room independence.
 
 vectors/bitwire/wiretree/cases.json and scripts/bitwire/wiretree-lib.mjs are
 unmodified copies of conformance/wiretree/cases.json and scripts/wiretree-lib.mjs
-from Bitspark/bitwire at commit 3b237aaae063443297851e1c6e9edd960995ac11,
+from Bitspark/bitwire at commit a13d0f89ccb015f22efc64b39e56cd42333ebe67,
 licensed under the Apache License, Version 2.0:
 Copyright 2026 Bitspark and the Bitwire contributors.

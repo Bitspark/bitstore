@@ -37,12 +37,12 @@ const rejected = [
   ['normalizing', 'own-and-descendants', ['ts']],
   ['lossy-keys', 'own-and-descendants'],
   ['cycle-accepting', 'cycle-refused'],
+  ['bom-stripping', 'keys-are-exact-bytes'],
 ];
 // Unlawful realizations the pinned cases cannot yet detect. Each must still pass
 // every case; when a re-pin starts rejecting one, move it to the list above.
-const gaps = [
-  ['bom-stripping', 'no key begins with a UTF-8 byte order mark', 'https://github.com/Bitspark/bitwire/issues/65'],
-];
+// Each entry: [realization, why the cases miss it, tracking link]. None at this pin.
+const gaps = [];
 
 for (const file of source.files) {
   assert.equal(sha256(readFileSync(join(root, file.path))), file.sha256, `${file.path} is not the pinned ${pin} ${file.upstream}`);

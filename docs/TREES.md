@@ -1,7 +1,7 @@
 # Shared structural evidence for DataTree
 
 `DataTree = DeixisNode<Data>` and bitwire's `WireTree = DeixisNode<Wire>` claim
-one structural contract ([bitwire decision 0012](https://github.com/Bitspark/bitwire/blob/3b237aaae063443297851e1c6e9edd960995ac11/docs/decisions/0012-explicit-data-and-wire-trees.md)).
+one structural contract ([bitwire decision 0012](https://github.com/Bitspark/bitwire/blob/a13d0f89ccb015f22efc64b39e56cd42333ebe67/docs/decisions/0012-explicit-data-and-wire-trees.md)).
 This repository's CI holds the DataTree in this checkout to the same
 independently authored cases that bitwire holds WireTree to, in Go and
 TypeScript, on every pull request.
@@ -17,7 +17,7 @@ TypeScript package and a Go driver from this checkout's source.
 ## Evidence decision
 
 The evidence is the `structure` family of bitwire's
-[`conformance/wiretree/cases.json`](https://github.com/Bitspark/bitwire/blob/3b237aaae063443297851e1c6e9edd960995ac11/conformance/wiretree/cases.json),
+[`conformance/wiretree/cases.json`](https://github.com/Bitspark/bitwire/blob/a13d0f89ccb015f22efc64b39e56cd42333ebe67/conformance/wiretree/cases.json),
 pinned at an immutable commit and run here against the source being changed.
 
 - **Why this case set.** Its expectations were written from the contract, not
@@ -36,8 +36,8 @@ pinned at an immutable commit and run here against the source being changed.
 | Pin | Value |
 | --- | --- |
 | Repository | [Bitspark/bitwire](https://github.com/Bitspark/bitwire) |
-| Commit | `3b237aaae063443297851e1c6e9edd960995ac11` (both files last changed in `e8cc923`) |
-| `conformance/wiretree/cases.json` | sha256 `34dbee9c44a0f9402bd7a11595a30d19b786190b0167d9ad69a97c38cdeea515` |
+| Commit | `a13d0f89ccb015f22efc64b39e56cd42333ebe67` (`cases.json` last changed here, `wiretree-lib.mjs` in `e8cc923`) |
+| `conformance/wiretree/cases.json` | sha256 `32f0caf66f69066259d038bcfa50777ace2d7621f67d8bd6a875e09653ddf221` |
 | `scripts/wiretree-lib.mjs` | sha256 `7ce39ae3db4322aa6a1b1bb109539d6039229ef5437270681e3c8992b61acce0` |
 
 ## From Wire to Data
@@ -67,7 +67,7 @@ its own copy and compares what the caller received with it. It never compares
 against the object under test. (bitwire's WireTree driver made that mistake,
 [bitwire#65](https://github.com/Bitspark/bitwire/issues/65).)
 
-**Excluded families.** The 1 `bridge` and 7 `carrier` cases are not run. The
+**Excluded families.** The 1 `bridge` and 8 `carrier` cases are not run. The
 bridge maps a WireTree onto bitwire's addressed carrier paths; the carrier cases
 compose trees across bitruntime carriers and dispatchers. Neither has a
 counterpart in this library. Remote data trees belong to service integration
@@ -75,10 +75,11 @@ counterpart in this library. Remote data trees belong to service integration
 
 ## Covered observations
 
-The 19 structure cases cover:
+The 20 structure cases cover:
 
 - complete children, including the empty key;
-- exact keys: binary `ff`, U+FFFD, the literal `a/b`, and both spellings of é;
+- exact keys: binary `ff`, U+FFFD, the literal `a/b`, both spellings of é, and
+  `a` beside U+FEFF `a` (bytes `ef bb bf 61`), where `ef bb bf` alone names no child;
 - empty, staged and missing selection, and chains that fail part-way;
 - own reader identity and shared children;
 - key copying on construction, `children()` and `decompose()`;
@@ -112,15 +113,18 @@ each to fail the case aimed at it.
 | `normalizing` (TypeScript) | UTF-8 keys are NFC-normalized. | `own-and-descendants` |
 | `lossy-keys` | Keys pass through lossy text decoding. | `own-and-descendants` |
 | `cycle-accepting` | Construction never looks for a cycle through a foreign child. | `cycle-refused` |
+| `bom-stripping` | A leading U+FEFF is stripped from keys, as a byte order mark. | `keys-are-exact-bytes` |
 
 Go has no standard-library NFC normalization, so `normalizing` runs in
 TypeScript only.
 
-**Known gap.** A realization that strips a leading UTF-8 byte order mark from
-keys passes every pinned case, because no key begins with one. The script runs
-it and requires it to pass, so a re-pin that closes the gap fails until it is
-moved to the table above. Coverage is requested in
-[bitwire#65](https://github.com/Bitspark/bitwire/issues/65).
+**Gaps.** The script also keeps a list of unlawful realizations that the
+pinned cases cannot detect. Each must pass every case, so a re-pin that starts
+rejecting one fails until it moves to the table above. There are none at this
+pin. At the previous pin, `3b237aa` (19 structure cases), `bom-stripping`
+passed every case because no key began with U+FEFF. bitwire added
+`keys-are-exact-bytes` for it ([bitwire#65](https://github.com/Bitspark/bitwire/issues/65),
+[#67](https://github.com/Bitspark/bitwire/pull/67)).
 
 ## What the cases found
 

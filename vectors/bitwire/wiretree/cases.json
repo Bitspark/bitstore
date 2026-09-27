@@ -119,6 +119,28 @@
     {
       "id": "replacementChar",
       "own": "fffd"
+    },
+    {
+      "id": "bomRoot",
+      "own": "bomRoot",
+      "children": [
+        [
+          "a",
+          "plainA"
+        ],
+        [
+          "﻿a",
+          "bomA"
+        ]
+      ]
+    },
+    {
+      "id": "plainA",
+      "own": "plainA"
+    },
+    {
+      "id": "bomA",
+      "own": "bomA"
     }
   ],
   "renders": {
@@ -322,6 +344,34 @@
           {
             "own": [
               "combining",
+              1
+            ],
+            "children": []
+          }
+        ]
+      ]
+    },
+    "bomRoot": {
+      "own": [
+        "bomRoot",
+        1
+      ],
+      "children": [
+        [
+          "a",
+          {
+            "own": [
+              "plainA",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          "\ufeffa",
+          {
+            "own": [
+              "bomA",
               1
             ],
             "children": []
@@ -2254,6 +2304,63 @@
       }
     },
     {
+      "id": "keys-are-exact-bytes",
+      "family": "structure",
+      "root": "bomRoot",
+      "note": "A leading U+FEFF is part of a key (bytes ef bb bf 61), never a byte order mark: \"a\" and \"\ufeffa\" are distinct children of the constructed tree, each reached by its own path; the bytes ef bb bf alone name no child.",
+      "steps": [
+        {
+          "op": "structure",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "\ufeffa"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            {
+              "hex": "efbbbf"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "structure",
+            {
+              "$render": "bomRoot"
+            }
+          ],
+          [
+            "delivered",
+            "plainA",
+            1
+          ],
+          [
+            "delivered",
+            "bomA",
+            1
+          ],
+          [
+            "missing"
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
       "id": "bridge-exact-utf8-image",
       "family": "bridge",
       "root": "root",
@@ -3071,6 +3178,66 @@
             "refused"
           ],
           ["error", "method_not_found"]
+        ],
+        "unchanged": true,
+        "borrowedUsable": true
+      }
+    },
+    {
+      "id": "carrier-keys-are-exact-bytes",
+      "family": "carrier",
+      "root": "bomRoot",
+      "note": "A leading U+FEFF is part of a key (bytes ef bb bf 61), never a byte order mark: \"a\" and \"﻿a\" are distinct children, and each is reached by its own near path and its own carrier path.",
+      "steps": [
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "﻿a"
+          ]
+        },
+        {
+          "op": "sendAddressed",
+          "path": [
+            "t",
+            "﻿a"
+          ]
+        },
+        {
+          "op": "sendAddressed",
+          "path": [
+            "t",
+            "a"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "plainA",
+            1
+          ],
+          [
+            "delivered",
+            "bomA",
+            1
+          ],
+          [
+            "delivered",
+            "bomA",
+            2
+          ],
+          [
+            "delivered",
+            "plainA",
+            2
+          ]
         ],
         "unchanged": true,
         "borrowedUsable": true
