@@ -28,16 +28,41 @@ export function compare(a: Bytes, b: Bytes): number {
   for (let i=0; i<Math.min(a.length,b.length); i++) { const n=a[i]!-b[i]!; if (n) return Math.sign(n); }
   return Math.sign(a.length-b.length);
 }
+/** Copies children and keys in key order, refusing non-byte keys, missing children and duplicate keys. */
+function sortedChildren<T>(children: Iterable<NodeChild<T>>): NodeChild<T>[] {
+  const result=[...children].map(([k,d]) => {
+    if(!(k instanceof Uint8Array)) throw new StoreError("invalid_key");
+    if(d===undefined || d===null) throw new StoreError("invalid_child");
+    return [new Uint8Array(k),d] as const;
+  }).sort(([a],[b]) => compare(a,b));
+  for (let i=1;i<result.length;i++) if (compare(result[i-1]![0],result[i]![0])===0) throw new StoreError("duplicate_key");
+  return result;
+}
+/**
+ * Walks children implemented outside this module through their complete
+ * children() graph; sharing is allowed, a cycle is not. Nodes this module
+ * constructed were validated when they were. own(), at() and readers are never called.
+ */
+function validateForeign<T>(children: readonly NodeChild<T>[]): void {
+  const active=new Set<DeixisNode<T>>(),done=new Set<DeixisNode<T>>();
+  const stack:{tree:DeixisNode<T>;exit:boolean}[]=children.map(([,tree])=>({tree,exit:false}));
+  while(stack.length) {
+    const {tree,exit}=stack.pop()!;
+    if(tree instanceof Node) continue;
+    if(exit) { active.delete(tree); done.add(tree); continue; }
+    if(active.has(tree)) throw new StoreError("cyclic_tree");
+    if(done.has(tree)) continue;
+    active.add(tree); stack.push({tree,exit:true});
+    for(const [,child] of sortedChildren(tree.children())) stack.push({tree:child,exit:false});
+  }
+}
 class Node<T> implements DeixisNode<T> {
   readonly #own: T;
   readonly #children: NodeChild<T>[];
   constructor(own: T, children: Iterable<NodeChild<T>>) {
     this.#own = own;
-    this.#children = [...children].map(([k,d]) => {
-      if(d===undefined || d===null) throw new StoreError("invalid_child");
-      return [new Uint8Array(k),d] as const;
-    }).sort(([a],[b]) => compare(a,b));
-    for (let i=1;i<this.#children.length;i++) if (compare(this.#children[i-1]![0],this.#children[i]![0])===0) throw new StoreError("duplicate_key");
+    this.#children = sortedChildren(children);
+    validateForeign(this.#children);
   }
   own(): T { return this.#own; }
   children(): readonly NodeChild<T>[] { return this.#children.map(([k,d]) => [new Uint8Array(k),d] as const); }

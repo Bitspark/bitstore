@@ -42,5 +42,6 @@ jobs:
         working-directory: store/ts
       - run: npm test
         working-directory: store/ts
+      - run: node scripts/trees.mjs
       - run: node scripts/interop.mjs
       - run: node scripts/package-smoke.mjs

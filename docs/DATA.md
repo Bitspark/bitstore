@@ -19,7 +19,9 @@ Selection at an empty path returns the current node; concatenated selection
 is equivalent to successive selection. Decomposition followed by composition
 preserves own payload and all child observations. Structure is finite and
 acyclic; shared child objects denote repeated whole subtrees, not links in the
-model. Child keys are exact byte strings, including empty and non-UTF-8 keys.
+model. Composition refuses duplicate keys, missing children and cycles,
+including a cycle reached through a child implemented outside the library, and
+inspects such children only through `children()`. Child keys are exact byte strings, including empty and non-UTF-8 keys.
 No normalization, slash splitting, parent pointer or mutable name is implied.
 
 ```text

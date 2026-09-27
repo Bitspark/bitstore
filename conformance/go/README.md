@@ -23,3 +23,7 @@ implementation. Go/TypeScript tests check expected bytes and failures, lazy
 paths, exact keys, reconstruction and deliberately lying stores. The native
 interchange script exchanges complete artifacts between independently compiled
 presentations; it is agreement evidence, not clean-room independence.
+
+`trees/` is the Go driver for bitwire's independently authored structural cases,
+run with the TypeScript driver in `conformance/ts/` by `node scripts/trees.mjs`.
+See [shared structural evidence](../../docs/TREES.md).

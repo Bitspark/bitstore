@@ -23,6 +23,10 @@ send(tree, path, message) = select(tree, path).own().send(message)
 Missing paths are structural absence, separate from read failures or message
 refusals at existing nodes. Byte keys include empty and non-UTF-8 values.
 
+CI holds this DataTree to the 19 structure cases bitwire authored for WireTree,
+pinned at bitwire `3b237aa`, in Go and TypeScript. Deliberately unlawful trees
+must fail them. See [shared structural evidence](docs/TREES.md).
+
 Go and TypeScript implement the model, canonical flat and linked codecs, lazy
 verified reads, bounded reconstruction, raw Store interfaces, memory backends,
 HTTP clients and explicit Bytes backend discovery. The deployed service and
@@ -46,7 +50,7 @@ registry publication is a separate delivery and is not claimed here.
 - [Model, codec profile and limits](docs/DATA.md)
 - [Raw Store contract](docs/raw/SURFACE.md) and [HTTP binding](docs/raw/HTTP.md)
 - [Bytes backend discovery](docs/BYTES-PROFILE.md)
-- [Reusable conformance](conformance/go/README.md) and [release evidence](docs/RELEASE.md)
+- [Reusable conformance](conformance/go/README.md), [shared structural evidence](docs/TREES.md) and [release evidence](docs/RELEASE.md)
 
 Read [CHARTER.md](CHARTER.md) for ownership and [LAYOUT.md](LAYOUT.md) for source
 organization.
