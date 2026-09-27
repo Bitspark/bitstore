@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Independently authored structural cases for WireTree, run here against DataTree. Both files are byte-identical copies; never edit them here. Re-pin by copying a newer revision and updating this record.",
+  "repository": "https://github.com/Bitspark/bitwire",
+  "commit": "3b237aaae063443297851e1c6e9edd960995ac11",
+  "license": "Apache-2.0",
+  "files": [
+    {
+      "path": "vectors/bitwire/wiretree/cases.json",
+      "upstream": "conformance/wiretree/cases.json",
+      "lastChangedIn": "e8cc923ae345576c831662f96baa3734a3ba883c",
+      "gitBlob": "b8a6a2d709a6658555c2685f4d71d5d2899a84b5",
+      "sha256": "34dbee9c44a0f9402bd7a11595a30d19b786190b0167d9ad69a97c38cdeea515"
+    },
+    {
+      "path": "scripts/bitwire/wiretree-lib.mjs",
+      "upstream": "scripts/wiretree-lib.mjs",
+      "lastChangedIn": "e8cc923ae345576c831662f96baa3734a3ba883c",
+      "gitBlob": "2b97ce3767da1d7691619e2b9f383bdbb59bc7db",
+      "sha256": "7ce39ae3db4322aa6a1b1bb109539d6039229ef5437270681e3c8992b61acce0"
+    }
+  ],
+  "families": {
+    "structure": "run against DataTree",
+    "bridge": "excluded: AddressedWire has no Data counterpart",
+    "carrier": "excluded: carriers and dispatchers belong to bitwire and bitruntime"
+  }
+}

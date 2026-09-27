@@ -1,0 +1,3080 @@
+{
+  "schemaVersion": 1,
+  "contract": "bitwire v0.3.0, decision 0012: Wire.send(message), WireTree = DeixisNode<Wire>, AddressedWire",
+  "profile": "bitwire/1 = nightseam v0.6.0 at 5cc9723a24646c40ed1861f892b2b23eb6d785d7; error codes from its docs/wire/profile.md",
+  "notation": {
+    "key": "A JSON string is the exact UTF-8 encoding of that string; {\"hex\": \"...\"} is exact bytes. Keys are never normalized.",
+    "addressedPath": "An array of Unicode-scalar strings, the unchanged bitwire/1 carrier path.",
+    "own": "A name creates one stateful instrumented primitive per case, shared by every node declaring it; null is a primitive that refuses every send.",
+    "render": "{\"own\": [name, instance] | null, \"children\": [[key, render], ...]}; children compare as a set of exact keys. {\"$render\": name} refers to renders.",
+    "same": "Whether the two selected nodes hold the identical own capability, which is what shared primitive state depends on.",
+    "servedAt": "Carrier cases serve the far tree under this nonempty addressed prefix, because bitwire/1 refuses a request at a peer root's empty path. A tree path p is carrier path servedAt ++ utf8(p).",
+    "delivered": "[\"delivered\", name, count]: the named primitive admitted a message; count is that primitive instance's own number of admissions, from 1.",
+    "instances": "Instances of a name are numbered from 1 in creation order within a case; a fresh or copied primitive takes the next number.",
+    "refused": "[\"refused\"]: the selected node's own primitive was invoked and refused; the primitive records this itself. [\"missing\"]: selection found no node, no primitive was invoked, and the derived send was refused. [\"unreached\"]: the addressed bridge refused without invoking any primitive.",
+    "illFormed": "bridgeInvalid sends one segment that is not a Unicode scalar string: the UTF-16 code units in utf16 where strings are UTF-16, or the bytes in utf8 where strings are bytes. A lossy conversion of either would reach the U+FFFD or ff key.",
+    "foreign": "foreign: true adds, under key foreign, a child implemented by the driver rather than the realization: own primitive foreign with one child inner (own inner)."
+  },
+  "servedAt": [
+    "t"
+  ],
+  "declarations": [
+    {
+      "id": "root",
+      "own": "root",
+      "children": [
+        ["", "blank"],
+        ["a", "branch"],
+        ["a/b", "slash"],
+        ["alias", "leaf"],
+        ["empty", "empty"],
+        ["é", "acute"],
+        ["é", "combining"],
+        [
+          {
+            "hex": "ff"
+          },
+          "binary"
+        ],
+        ["�", "replacementChar"]
+      ]
+    },
+    {
+      "id": "rroot",
+      "own": null,
+      "children": [
+        ["", "rblank"],
+        ["a", "rbranch"],
+        ["a/b", "slash"],
+        ["alias", "leaf"],
+        ["empty", "empty"],
+        ["é", "acute"],
+        ["é", "combining"]
+      ]
+    },
+    {
+      "id": "blank",
+      "own": "blank",
+      "children": [
+        ["", "blankLeaf"]
+      ]
+    },
+    {
+      "id": "rblank",
+      "own": null,
+      "children": [
+        ["", "blankLeaf"]
+      ]
+    },
+    {
+      "id": "branch",
+      "own": "branch",
+      "children": [
+        ["b", "leaf"]
+      ]
+    },
+    {
+      "id": "rbranch",
+      "own": null,
+      "children": [
+        ["b", "leaf"]
+      ]
+    },
+    {
+      "id": "empty",
+      "own": null
+    },
+    {
+      "id": "leaf",
+      "own": "leaf"
+    },
+    {
+      "id": "blankLeaf",
+      "own": "blank-leaf"
+    },
+    {
+      "id": "slash",
+      "own": "slash"
+    },
+    {
+      "id": "acute",
+      "own": "acute"
+    },
+    {
+      "id": "combining",
+      "own": "combining"
+    },
+    {
+      "id": "binary",
+      "own": "binary"
+    },
+    {
+      "id": "replacement",
+      "own": "replacement"
+    },
+    {
+      "id": "extra",
+      "own": "extra"
+    },
+    {
+      "id": "replacementChar",
+      "own": "fffd"
+    }
+  ],
+  "renders": {
+    "root": {
+      "own": [
+        "root",
+        1
+      ],
+      "children": [
+        [
+          "",
+          {
+            "own": [
+              "blank",
+              1
+            ],
+            "children": [
+              [
+                "",
+                {
+                  "own": [
+                    "blank-leaf",
+                    1
+                  ],
+                  "children": []
+                }
+              ]
+            ]
+          }
+        ],
+        [
+          "a",
+          {
+            "own": [
+              "branch",
+              1
+            ],
+            "children": [
+              [
+                "b",
+                {
+                  "own": [
+                    "leaf",
+                    1
+                  ],
+                  "children": []
+                }
+              ]
+            ]
+          }
+        ],
+        [
+          "a/b",
+          {
+            "own": [
+              "slash",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          "alias",
+          {
+            "own": [
+              "leaf",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          "empty",
+          {
+            "own": null,
+            "children": []
+          }
+        ],
+        [
+          "é",
+          {
+            "own": [
+              "acute",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          "é",
+          {
+            "own": [
+              "combining",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          {
+            "hex": "ff"
+          },
+          {
+            "own": [
+              "binary",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          "�",
+          {
+            "own": [
+              "fffd",
+              1
+            ],
+            "children": []
+          }
+        ]
+      ]
+    },
+    "rroot": {
+      "own": null,
+      "children": [
+        [
+          "",
+          {
+            "own": null,
+            "children": [
+              [
+                "",
+                {
+                  "own": [
+                    "blank-leaf",
+                    1
+                  ],
+                  "children": []
+                }
+              ]
+            ]
+          }
+        ],
+        [
+          "a",
+          {
+            "own": null,
+            "children": [
+              [
+                "b",
+                {
+                  "own": [
+                    "leaf",
+                    1
+                  ],
+                  "children": []
+                }
+              ]
+            ]
+          }
+        ],
+        [
+          "a/b",
+          {
+            "own": [
+              "slash",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          "alias",
+          {
+            "own": [
+              "leaf",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          "empty",
+          {
+            "own": null,
+            "children": []
+          }
+        ],
+        [
+          "é",
+          {
+            "own": [
+              "acute",
+              1
+            ],
+            "children": []
+          }
+        ],
+        [
+          "é",
+          {
+            "own": [
+              "combining",
+              1
+            ],
+            "children": []
+          }
+        ]
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "own-and-descendants",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "structure",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            ""
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["", ""]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a/b"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "é"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "é"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            {
+              "hex": "ff"
+            }
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["alias", "x"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a",
+            "b",
+            "x",
+            "y"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "ÿ"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "structure",
+            {
+              "$render": "root"
+            }
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "blank",
+            1
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "delivered",
+            "slash",
+            1
+          ],
+          [
+            "delivered",
+            "acute",
+            1
+          ],
+          [
+            "delivered",
+            "combining",
+            1
+          ],
+          [
+            "delivered",
+            "binary",
+            1
+          ],
+          [
+            "refused"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "refusing-own-and-descendants",
+      "family": "structure",
+      "root": "rroot",
+      "steps": [
+        {
+          "op": "structure",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            ""
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["", ""]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a/b"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "é"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "é"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "missing"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["alias", "x"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a",
+            "b",
+            "x",
+            "y"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "structure",
+            {
+              "$render": "rroot"
+            }
+          ],
+          [
+            "refused"
+          ],
+          [
+            "refused"
+          ],
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "refused"
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "delivered",
+            "slash",
+            1
+          ],
+          [
+            "delivered",
+            "acute",
+            1
+          ],
+          [
+            "delivered",
+            "combining",
+            1
+          ],
+          [
+            "refused"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "nested-selection-agrees",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            []
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [],
+            [
+              "a"
+            ],
+            [],
+            [
+              "b"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "b"
+          ],
+          "selections": [
+            [
+              "a"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            ["a", "b"]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "a"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            ""
+          ],
+          "selections": [
+            [
+              ""
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              ""
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "x"
+          ],
+          "selections": [
+            [
+              "alias"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "alias"
+            ],
+            [
+              "x"
+            ],
+            []
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "missing"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "a"
+            ],
+            [
+              "missing"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "empty"
+            ],
+            []
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              {
+                "hex": "ff"
+              }
+            ]
+          ]
+        },
+        {
+          "op": "same",
+          "paths": [
+            ["a", "b"],
+            [
+              "alias"
+            ]
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "leaf",
+            3
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "delivered",
+            "blank",
+            1
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "refused"
+          ],
+          [
+            "delivered",
+            "binary",
+            1
+          ],
+          [
+            "same",
+            true
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "missing-never-falls-back",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": [
+            "missing"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["a", "missing"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["empty", "x"]
+        },
+        {
+          "op": "send",
+          "path": ["", "missing"]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "missing"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "a"
+            ],
+            [
+              "missing"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "refused"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "refusing-versus-missing",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "structure",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "structure",
+          "path": [
+            "missing"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "missing"
+          ]
+        },
+        {
+          "op": "structure",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "structure",
+            {
+              "own": null,
+              "children": []
+            }
+          ],
+          ["structure", "missing"],
+          [
+            "refused"
+          ],
+          [
+            "missing"
+          ],
+          [
+            "structure",
+            {
+              "$render": "root"
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "root-cut-reconstruction",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "keep": [
+            [
+              ""
+            ],
+            [
+              "a"
+            ],
+            [
+              "a/b"
+            ],
+            [
+              "alias"
+            ],
+            [
+              "empty"
+            ],
+            [
+              "é"
+            ],
+            [
+              "é"
+            ],
+            [
+              {
+                "hex": "ff"
+              }
+            ],
+            [
+              "�"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "structure",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          [
+            "structure",
+            {
+              "$render": "root"
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "complete-cuts-agree",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "keep": []
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "rebuild",
+          "keep": [
+            [
+              "a"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "rebuild",
+          "keep": [
+            [
+              ""
+            ],
+            [
+              "empty"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["", ""]
+        },
+        {
+          "op": "rebuild",
+          "keep": [
+            []
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "rebuild",
+          "keep": [
+            ["a", "b"]
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            {
+              "hex": "ff"
+            }
+          ]
+        },
+        {
+          "op": "same",
+          "paths": [
+            ["a", "b"],
+            [
+              "alias"
+            ]
+          ]
+        },
+        {
+          "op": "structure",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            3
+          ],
+          [
+            "delivered",
+            "binary",
+            1
+          ],
+          [
+            "same",
+            true
+          ],
+          [
+            "structure",
+            {
+              "$render": "root"
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "refusing-complete-cuts-agree",
+      "family": "structure",
+      "root": "rroot",
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "keep": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "rebuild",
+          "keep": [
+            [
+              "a"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["", ""]
+        },
+        {
+          "op": "rebuild",
+          "keep": [
+            [
+              ""
+            ],
+            [
+              "empty"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "keep": [
+            []
+          ]
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "structure",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            3
+          ],
+          [
+            "refused"
+          ],
+          [
+            "structure",
+            {
+              "$render": "rroot"
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "children-alone-lose-own",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "own",
+          "path": [],
+          "own": null
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "structure",
+          "path": [
+            "a"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "refused"
+          ],
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "structure",
+            {
+              "own": [
+                "branch",
+                1
+              ],
+              "children": [
+                [
+                  "b",
+                  {
+                    "own": [
+                      "leaf",
+                      1
+                    ],
+                    "children": []
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "fresh-own-resets-state",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "own",
+          "path": [],
+          "own": "fresh"
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "structure",
+          "path": [
+            "a"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "root",
+            2
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "structure",
+            {
+              "own": [
+                "branch",
+                1
+              ],
+              "children": [
+                [
+                  "b",
+                  {
+                    "own": [
+                      "leaf",
+                      1
+                    ],
+                    "children": []
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "shared-child-state",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "rebuild",
+          "keep": []
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "same",
+          "paths": [
+            ["a", "b"],
+            [
+              "alias"
+            ]
+          ]
+        },
+        {
+          "op": "structure",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "leaf",
+            3
+          ],
+          [
+            "delivered",
+            "leaf",
+            4
+          ],
+          [
+            "same",
+            true
+          ],
+          [
+            "structure",
+            {
+              "$render": "root"
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "equivalent-substitution",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "substitute",
+          "path": [
+            "a"
+          ],
+          "mode": "parts"
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "same",
+          "paths": [
+            ["a", "b"],
+            [
+              "alias"
+            ]
+          ]
+        },
+        {
+          "op": "structure",
+          "path": [
+            "a"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "leaf",
+            3
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          [
+            "same",
+            true
+          ],
+          [
+            "structure",
+            {
+              "own": [
+                "branch",
+                1
+              ],
+              "children": [
+                [
+                  "b",
+                  {
+                    "own": [
+                      "leaf",
+                      1
+                    ],
+                    "children": []
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "copied-subtree-breaks-sharing",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "substitute",
+          "path": [
+            "a"
+          ],
+          "mode": "copy"
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "same",
+          "paths": [
+            ["a", "b"],
+            [
+              "alias"
+            ]
+          ]
+        },
+        {
+          "op": "structure",
+          "path": [
+            "a"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "same",
+            false
+          ],
+          [
+            "structure",
+            {
+              "own": [
+                "branch",
+                2
+              ],
+              "children": [
+                [
+                  "b",
+                  {
+                    "own": [
+                      "leaf",
+                      2
+                    ],
+                    "children": []
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "altered-children-detected",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "omit",
+          "path": [],
+          "key": "a"
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "rename",
+          "path": [],
+          "key": "alias",
+          "to": "renamed"
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "renamed"
+          ]
+        },
+        {
+          "op": "add",
+          "path": [],
+          "key": "extra",
+          "node": "extra"
+        },
+        {
+          "op": "send",
+          "path": [
+            "extra"
+          ]
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "structure",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "missing"
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "missing"
+          ],
+          [
+            "delivered",
+            "leaf",
+            3
+          ],
+          [
+            "delivered",
+            "extra",
+            1
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "structure",
+            {
+              "own": [
+                "root",
+                1
+              ],
+              "children": [
+                [
+                  "",
+                  {
+                    "own": [
+                      "blank",
+                      1
+                    ],
+                    "children": [
+                      [
+                        "",
+                        {
+                          "own": [
+                            "blank-leaf",
+                            1
+                          ],
+                          "children": []
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                [
+                  "a/b",
+                  {
+                    "own": [
+                      "slash",
+                      1
+                    ],
+                    "children": []
+                  }
+                ],
+                [
+                  "empty",
+                  {
+                    "own": null,
+                    "children": []
+                  }
+                ],
+                [
+                  "extra",
+                  {
+                    "own": [
+                      "extra",
+                      1
+                    ],
+                    "children": []
+                  }
+                ],
+                [
+                  "renamed",
+                  {
+                    "own": [
+                      "leaf",
+                      1
+                    ],
+                    "children": []
+                  }
+                ],
+                [
+                  "é",
+                  {
+                    "own": [
+                      "acute",
+                      1
+                    ],
+                    "children": []
+                  }
+                ],
+                [
+                  "é",
+                  {
+                    "own": [
+                      "combining",
+                      1
+                    ],
+                    "children": []
+                  }
+                ],
+                [
+                  {
+                    "hex": "ff"
+                  },
+                  {
+                    "own": [
+                      "binary",
+                      1
+                    ],
+                    "children": []
+                  }
+                ],
+                [
+                  "�",
+                  {
+                    "own": [
+                      "fffd",
+                      1
+                    ],
+                    "children": []
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "selected-subtree-keeps-identity",
+      "family": "structure",
+      "root": "root",
+      "steps": [
+        {
+          "op": "view",
+          "selections": [
+            [
+              "a"
+            ],
+            [
+              "b"
+            ]
+          ]
+        },
+        {
+          "op": "replace",
+          "path": ["a", "b"],
+          "node": "replacement"
+        },
+        {
+          "op": "send",
+          "path": [],
+          "via": "view"
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "structure",
+          "path": [
+            "a"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "replacement",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "structure",
+            {
+              "own": [
+                "branch",
+                1
+              ],
+              "children": [
+                [
+                  "b",
+                  {
+                    "own": [
+                      "replacement",
+                      1
+                    ],
+                    "children": []
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "duplicate-keys-refused",
+      "family": "structure",
+      "root": "root",
+      "fault": "duplicate",
+      "steps": [
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        }
+      ],
+      "expected": {
+        "construction": "refused"
+      }
+    },
+    {
+      "id": "missing-child-refused",
+      "family": "structure",
+      "root": "root",
+      "fault": "missingChild",
+      "steps": [
+        {
+          "op": "send",
+          "path": [
+            "hole"
+          ]
+        }
+      ],
+      "expected": {
+        "construction": "refused"
+      }
+    },
+    {
+      "id": "cycle-refused",
+      "family": "structure",
+      "root": "root",
+      "fault": "cycle",
+      "steps": [],
+      "expected": {
+        "construction": "refused"
+      }
+    },
+    {
+      "id": "foreign-child-accepted",
+      "family": "structure",
+      "root": "root",
+      "foreign": true,
+      "steps": [
+        {
+          "op": "send",
+          "path": [
+            "foreign"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["foreign", "inner"]
+        },
+        {
+          "op": "structure",
+          "path": [
+            "foreign"
+          ]
+        },
+        {
+          "op": "rebuild",
+          "keep": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "foreign"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["foreign", "missing"]
+        },
+        {
+          "op": "structure",
+          "path": [
+            "foreign"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "foreign",
+            1
+          ],
+          [
+            "delivered",
+            "inner",
+            1
+          ],
+          [
+            "structure",
+            {
+              "own": [
+                "foreign",
+                1
+              ],
+              "children": [
+                [
+                  "inner",
+                  {
+                    "own": [
+                      "inner",
+                      1
+                    ],
+                    "children": []
+                  }
+                ]
+              ]
+            }
+          ],
+          [
+            "delivered",
+            "foreign",
+            2
+          ],
+          [
+            "missing"
+          ],
+          [
+            "structure",
+            {
+              "own": [
+                "foreign",
+                1
+              ],
+              "children": [
+                [
+                  "inner",
+                  {
+                    "own": [
+                      "inner",
+                      1
+                    ],
+                    "children": []
+                  }
+                ]
+              ]
+            }
+          ]
+        ],
+        "partsExact": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "bridge-exact-utf8-image",
+      "family": "bridge",
+      "root": "root",
+      "steps": [
+        {
+          "op": "bridge",
+          "path": []
+        },
+        {
+          "op": "bridge",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "bridge",
+          "path": [
+            ""
+          ]
+        },
+        {
+          "op": "bridge",
+          "path": ["", ""]
+        },
+        {
+          "op": "bridge",
+          "path": [
+            "a/b"
+          ]
+        },
+        {
+          "op": "bridge",
+          "path": [
+            "é"
+          ]
+        },
+        {
+          "op": "bridge",
+          "path": [
+            "é"
+          ]
+        },
+        {
+          "op": "bridge",
+          "path": [
+            "ÿ"
+          ]
+        },
+        {
+          "op": "bridge",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "bridge",
+          "path": [
+            "missing"
+          ]
+        },
+        {
+          "op": "bridge",
+          "path": ["alias", "x"]
+        },
+        {
+          "op": "bridge",
+          "path": [
+            "�"
+          ]
+        },
+        {
+          "op": "bridgeInvalid",
+          "utf16": [
+            "d800"
+          ],
+          "utf8": "ff"
+        },
+        {
+          "op": "bridge",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "blank",
+            1
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "delivered",
+            "slash",
+            1
+          ],
+          [
+            "delivered",
+            "acute",
+            1
+          ],
+          [
+            "delivered",
+            "combining",
+            1
+          ],
+          [
+            "unreached"
+          ],
+          [
+            "refused"
+          ],
+          [
+            "unreached"
+          ],
+          [
+            "unreached"
+          ],
+          [
+            "delivered",
+            "fffd",
+            1
+          ],
+          [
+            "unreached"
+          ],
+          [
+            "delivered",
+            "root",
+            2
+          ]
+        ],
+        "sendOnly": true,
+        "unchanged": true
+      }
+    },
+    {
+      "id": "carrier-routing",
+      "family": "carrier",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            ""
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["", ""]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a/b"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "é"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "é"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "send",
+          "path": [
+            {
+              "hex": "ff"
+            }
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["alias", "x"]
+        },
+        {
+          "op": "sendAddressed",
+          "path": ["t", "missing"]
+        },
+        {
+          "op": "sendAddressed",
+          "path": [
+            "t",
+            "alias",
+            "x"
+          ]
+        },
+        {
+          "op": "sendAddressed",
+          "path": ["t", "ÿ"]
+        },
+        {
+          "op": "sendAddressed",
+          "path": [
+            "missing"
+          ]
+        },
+        {
+          "op": "sendAddressed",
+          "path": []
+        },
+        {
+          "op": "sendAddressed",
+          "path": [
+            "t",
+            "a",
+            "b"
+          ]
+        },
+        {
+          "op": "structure",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "blank",
+            1
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "delivered",
+            "slash",
+            1
+          ],
+          [
+            "delivered",
+            "acute",
+            1
+          ],
+          [
+            "delivered",
+            "combining",
+            1
+          ],
+          [
+            "refused"
+          ],
+          ["error", "internal"],
+          [
+            "missing"
+          ],
+          [
+            "missing"
+          ],
+          ["error", "method_not_found"],
+          ["error", "method_not_found"],
+          ["error", "method_not_found"],
+          ["error", "method_not_found"],
+          [
+            "refused"
+          ],
+          [
+            "delivered",
+            "leaf",
+            3
+          ],
+          [
+            "structure",
+            {
+              "$render": "root"
+            }
+          ]
+        ],
+        "unchanged": true,
+        "borrowedUsable": true
+      }
+    },
+    {
+      "id": "carrier-reconstruction",
+      "family": "carrier",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "side": "near",
+          "keep": []
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "a"
+            ],
+            [
+              "b"
+            ]
+          ]
+        },
+        {
+          "op": "rebuild",
+          "side": "far",
+          "keep": []
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "rebuild",
+          "side": "near",
+          "keep": [
+            [
+              "a"
+            ]
+          ]
+        },
+        {
+          "op": "rebuild",
+          "side": "far",
+          "keep": [
+            [
+              "a"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["", ""]
+        },
+        {
+          "op": "structure",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            3
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "structure",
+            {
+              "$render": "root"
+            }
+          ]
+        ],
+        "unchanged": true,
+        "borrowedUsable": true
+      }
+    },
+    {
+      "id": "carrier-relay-reconstruction",
+      "family": "carrier",
+      "root": "root",
+      "relay": true,
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "side": "near",
+          "keep": []
+        },
+        {
+          "op": "rebuild",
+          "side": "far",
+          "keep": []
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "a"
+            ],
+            [
+              "b"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": []
+        },
+        {
+          "op": "send",
+          "path": ["", ""]
+        },
+        {
+          "op": "send",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "sendAddressed",
+          "path": ["t", "missing"]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "refused"
+          ],
+          ["error", "internal"],
+          ["error", "method_not_found"]
+        ],
+        "unchanged": true,
+        "borrowedUsable": true
+      }
+    },
+    {
+      "id": "carrier-mount-reconstruction",
+      "family": "carrier",
+      "root": "root",
+      "mount": true,
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "side": "near",
+          "keep": []
+        },
+        {
+          "op": "rebuild",
+          "side": "far",
+          "keep": []
+        },
+        {
+          "op": "send",
+          "path": [],
+          "selections": [
+            [
+              "a"
+            ],
+            [
+              "b"
+            ]
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["", ""]
+        },
+        {
+          "op": "send",
+          "path": []
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "delivered",
+            "root",
+            1
+          ]
+        ],
+        "unchanged": true,
+        "borrowedUsable": true
+      }
+    },
+    {
+      "id": "carrier-late-reply-across-replacement",
+      "family": "carrier",
+      "root": "root",
+      "steps": [
+        {
+          "op": "hold",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "side": "near",
+          "keep": []
+        },
+        {
+          "op": "rebuild",
+          "side": "far",
+          "keep": []
+        },
+        {
+          "op": "replace",
+          "side": "far",
+          "path": ["a", "b"],
+          "node": "replacement"
+        },
+        {
+          "op": "replace",
+          "side": "far",
+          "path": [
+            "alias"
+          ],
+          "node": "replacement"
+        },
+        {
+          "op": "replace",
+          "side": "near",
+          "path": ["a", "b"],
+          "node": "replacement"
+        },
+        {
+          "op": "replace",
+          "side": "near",
+          "path": [
+            "alias"
+          ],
+          "node": "replacement"
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "a"
+          ]
+        },
+        {
+          "op": "teardown"
+        },
+        {
+          "op": "release"
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "held",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "replacement",
+            1
+          ],
+          [
+            "delivered",
+            "replacement",
+            2
+          ],
+          [
+            "delivered",
+            "branch",
+            1
+          ],
+          ["late", "leaf"]
+        ],
+        "unchanged": true,
+        "borrowedUsable": true
+      }
+    },
+    {
+      "id": "carrier-cancel-across-replacement",
+      "family": "carrier",
+      "root": "root",
+      "steps": [
+        {
+          "op": "hold",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "rebuild",
+          "side": "far",
+          "keep": []
+        },
+        {
+          "op": "replace",
+          "side": "far",
+          "path": ["a", "b"],
+          "node": "replacement"
+        },
+        {
+          "op": "replace",
+          "side": "near",
+          "path": ["a", "b"],
+          "node": "replacement"
+        },
+        {
+          "op": "cancel",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "send",
+          "path": [
+            "alias"
+          ]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "held",
+            "leaf",
+            1
+          ],
+          ["cancelled", "leaf"],
+          [
+            "delivered",
+            "replacement",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ]
+        ],
+        "unchanged": true,
+        "borrowedUsable": true
+      }
+    },
+    {
+      "id": "carrier-teardown-keeps-borrowed",
+      "family": "carrier",
+      "root": "root",
+      "steps": [
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "teardown"
+        },
+        {
+          "op": "direct",
+          "path": ["a", "b"]
+        },
+        {
+          "op": "direct",
+          "path": ["", ""]
+        },
+        {
+          "op": "direct",
+          "path": [
+            "missing"
+          ]
+        },
+        {
+          "op": "direct",
+          "path": [
+            "empty"
+          ]
+        },
+        {
+          "op": "send",
+          "path": ["a", "b"]
+        }
+      ],
+      "expected": {
+        "trace": [
+          [
+            "delivered",
+            "leaf",
+            1
+          ],
+          [
+            "delivered",
+            "leaf",
+            2
+          ],
+          [
+            "delivered",
+            "blank-leaf",
+            1
+          ],
+          [
+            "missing"
+          ],
+          [
+            "refused"
+          ],
+          ["error", "method_not_found"]
+        ],
+        "unchanged": true,
+        "borrowedUsable": true
+      }
+    }
+  ]
+}

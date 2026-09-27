@@ -33,7 +33,9 @@ Go/TypeScript interchange compares complete canonical chunks and roots for the
 fixed grammar corpus and twelve constructed trees. A fresh process outside the
 checkout installs the packed TypeScript artifact and stores/loads a DataTree value.
 CI runs formatting, Go vet/tests on Linux and Windows, Linux race tests,
-TypeScript checking/build/tests, interchange and the packed consumer.
+TypeScript checking/build/tests, interchange and the packed consumer. After
+v0.2.0 it also runs bitwire's pinned structural cases against DataTree in both
+languages ([TREES.md](TREES.md)).
 
 Local Windows Go 1.26.3 ordinary tests and vet pass. Its race runtime currently
 fails before tests with a ThreadSanitizer address-allocation error; Linux is the
