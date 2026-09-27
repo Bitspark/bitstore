@@ -40,11 +40,13 @@ replacement of v0.1.0's `Data` tree class with the primitive and explicit
 
 ```sh
 go get github.com/Bitspark/bitstore@v0.2.1
-npm install https://github.com/Bitspark/bitstore/releases/download/v0.2.1/bitspark-bitstore-0.2.1.tgz
+npm install --allow-remote=root https://github.com/Bitspark/bitstore/releases/download/v0.2.1/bitspark-bitstore-0.2.1.tgz
 ```
 
 The npm-compatible artifact is distributed by the GitHub release. An npmjs
-registry publication is a separate delivery and is not claimed here.
+registry publication is a separate delivery and is not claimed here. npm 12
+refuses remote tarball URLs by default (`EALLOWREMOTE`); `--allow-remote=root`
+admits the URL you name, and npm 11 installs with the same command.
 
 - [Go usage](store/go/README.md) and [TypeScript usage](store/ts/README.md)
 - [Breaking API migration](docs/MIGRATION-0.2.md)
