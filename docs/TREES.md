@@ -141,7 +141,7 @@ children and duplicate keys (`ErrInvalidTree`/`ErrInvalidDataTree`,
 built. Construction never calls `own`, `at`, `decompose` or a reader.
 TypeScript construction also refuses a key that is not a `Uint8Array`
 (`invalid_key`), rather than converting it: before, the string `"a"` became the
-empty key. These fixes are on main and not yet released.
+empty key. These fixes shipped in v0.2.1.
 
 ## Limits
 

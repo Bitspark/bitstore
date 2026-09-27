@@ -5,6 +5,29 @@ date (`2026-09-25`), Bytes backend profile version (`1`), and DataTree codec pro
 (`deixis-codec-v2/identity-bytes@v0.4.0`) have separate identities. A library
 release cannot silently freeze or replace the candidate codec profile.
 
+## v0.2.1 construction fix
+
+This patch release makes tree construction refuse input the structural contract
+already forbade. Lawful trees, codecs, serialized bytes, qualified roots, the
+raw contract and the codec profile are unchanged.
+
+- `Compose`/`NewDataTree` (Go) and `compose`/`dataTree` (TypeScript) refuse a
+  structural cycle reached through a child implemented outside the library, and
+  missing children or duplicate keys inside such a child. They inspect it only
+  through `children()`, never calling `own`, `at`, `decompose` or a reader.
+  v0.2.0 accepted the cycle; it surfaced only when the tree was encoded.
+- TypeScript construction refuses a key that is not a `Uint8Array`
+  (`invalid_key`). v0.2.0 converted it, so the string `"a"` became the empty
+  key. A plain number array such as `[97]` converted correctly and is now
+  refused too; pass `Uint8Array.of(97)`.
+
+bitwire's independently authored structural cases, which CI now runs against
+DataTree, found the cycle: v0.2.0 failed `cycle-refused` in Go and TypeScript.
+At this release the cases are pinned at bitwire `a13d0f8`. DataTree passes all
+20 structure cases in both languages, and every deliberately unlawful
+realization fails its case: 13 in Go, 14 in TypeScript. See
+[TREES.md](https://github.com/Bitspark/bitstore/blob/v0.2.1/docs/TREES.md).
+
 ## v0.2.0 API migration
 
 This breaking native release adopts `Data` for addressless reading and the
