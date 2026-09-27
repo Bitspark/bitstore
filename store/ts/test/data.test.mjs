@@ -42,6 +42,20 @@ test('construction validates references without reading and permits generic unde
   for(const value of [undefined,null]) assert.throws(()=>compose(source,[[b(''),value]]),isCode('invalid_child'));
   assert.equal(compose(undefined).own(),undefined);assert.equal(reads,0);
 });
+test('construction refuses cycles through foreign children, calling nothing but children()',()=>{
+  let calls=0;
+  const own={async read(){calls++;return b('')}};
+  const foreign=(children=[])=>({own(){calls++;return own},children:()=>children,at(){calls++},decompose(){calls++;return {own,children}}});
+  const leaf=foreign(),shared=foreign([[b('61'),leaf],[b('62'),leaf]]);
+  dataTree(own,[[b('78'),shared],[b('79'),shared]]);
+  const loop=foreign();loop.children=()=>[[b('616761696e'),foreign([[b(''),loop]])]];
+  for(const make of [dataTree,compose]) assert.throws(()=>make(own,[[b('78'),loop]]),isCode('cyclic_tree'));
+  assert.throws(()=>dataTree(own,[[b('78'),foreign([[b('6b'),leaf],[b('6b'),leaf]])]]),isCode('duplicate_key'));
+  assert.throws(()=>dataTree(own,[[b('78'),foreign([[b('6b'),undefined]])]]),isCode('invalid_child'));
+  // A key is exact bytes; text or numbers are not silently converted.
+  for(const key of ['x',[120]]) assert.throws(()=>dataTree(own,[[key,leaf]]),isCode('invalid_key'));
+  assert.equal(calls,0);
+});
 test('derived read distinguishes missing paths from failed storage and copies successful reads',async()=>{
   const missing=new StoreError('not_found'),unavailable=dataTree({async read(){throw missing}});
   await assert.rejects(read(unavailable),e=>e===missing);

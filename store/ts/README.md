@@ -21,7 +21,9 @@ The common structure is `DeixisNode<T>`: `own(): T`, complete byte-keyed
 `children()`, `at(path: TreePath)`, and `decompose(): {own, children}`. A tree is
 finite and acyclic. Keys are exact bytes; empty key, empty path and missing node
 remain distinct. `at([])` returns the node itself; missing selection returns
-`undefined`. `compose(own, children)` reconstructs a node from its parts.
+`undefined`. `compose(own, children)` reconstructs a node from its parts. It
+refuses keys that are not `Uint8Array`, duplicate keys, missing children and
+cycles, without reading.
 
 ```ts
 interface Data { read(): Promise<Bytes>; }

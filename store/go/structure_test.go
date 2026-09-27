@@ -128,6 +128,51 @@ func TestUnlawfulCyclicTreeIsRejected(t *testing.T) {
 	}
 }
 
+// foreignNode is implemented outside bitstore. Construction may inspect only
+// its Children; every other call is counted.
+type foreignNode struct {
+	children []bs.Child[bs.Data]
+	calls    *int
+}
+
+func (n *foreignNode) Own() bs.Data                       { *n.calls++; return bs.BytesData(nil) }
+func (n *foreignNode) Children() []bs.Child[bs.Data]      { return n.children }
+func (n *foreignNode) At(bs.TreePath) (bs.DataTree, bool) { *n.calls++; return nil, false }
+func (n *foreignNode) Decompose() (bs.Data, []bs.Child[bs.Data]) {
+	*n.calls++
+	return nil, n.children
+}
+
+func TestConstructionRefusesCyclesThroughForeignChildren(t *testing.T) {
+	calls := 0
+	own := readerFunc(func(context.Context) (bs.Bytes, error) { calls++; return nil, nil })
+	child := func(key string, tree bs.DataTree) bs.Child[bs.Data] {
+		return bs.Child[bs.Data]{Key: []byte(key), Tree: tree}
+	}
+	leaf := &foreignNode{calls: &calls}
+	shared := &foreignNode{children: []bs.Child[bs.Data]{child("a", leaf), child("b", leaf)}, calls: &calls}
+	if _, err := bs.NewDataTree(own, child("x", shared), child("y", shared)); err != nil {
+		t.Fatal("shared foreign children refused", err)
+	}
+	loop := &foreignNode{calls: &calls}
+	loop.children = []bs.Child[bs.Data]{child("again", &foreignNode{children: []bs.Child[bs.Data]{child("", loop)}, calls: &calls})}
+	for name, tree := range map[string]bs.DataTree{
+		"cycle":          loop,
+		"duplicate key":  &foreignNode{children: []bs.Child[bs.Data]{child("k", leaf), child("k", leaf)}, calls: &calls},
+		"nil grandchild": &foreignNode{children: []bs.Child[bs.Data]{child("k", nil)}, calls: &calls},
+	} {
+		if _, err := bs.Compose[bs.Data](own, child("x", tree)); !errors.Is(err, bs.ErrInvalidTree) {
+			t.Fatal(name, err)
+		}
+		if _, err := bs.NewDataTree(own, child("x", tree)); !errors.Is(err, bs.ErrInvalidDataTree) {
+			t.Fatal(name, err)
+		}
+	}
+	if calls != 0 {
+		t.Fatal("construction called more than Children", calls)
+	}
+}
+
 // An interface field makes the type comparable while this particular value is
 // not hashable. Encoding may memoize comparable values but must accept either.
 type valueNode struct{ own bs.Data }

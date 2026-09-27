@@ -73,22 +73,95 @@ func nilValue(v any) bool {
 }
 
 // Compose constructs a node without invoking its payload. It retains whole
-// lawful child nodes and copies keys. The caller supplies finite acyclic children.
+// lawful child nodes and copies keys. It refuses nil children, duplicate keys
+// and structural cycles. Children implemented outside this package are checked
+// through their complete Children graph, sharing allowed; Own, At and payloads
+// are never called. A cycle is found by node identity, so a child whose values
+// are not comparable must itself be finite.
 func Compose[T any](own T, children ...Child[T]) (DeixisNode[T], error) {
-	n := &treeNode[T]{own: own, children: make([]Child[T], len(children))}
+	n := &treeNode[T]{own: own}
+	var err error
+	if n.children, err = sortedChildren(children); err != nil {
+		return nil, err
+	}
+	if err = validateForeign(n.children); err != nil {
+		return nil, err
+	}
+	return n, nil
+}
+
+// sortedChildren copies children and keys in key order, refusing nil children
+// and duplicate keys.
+func sortedChildren[T any](children []Child[T]) ([]Child[T], error) {
+	result := make([]Child[T], len(children))
 	for i, c := range children {
 		if nilValue(c.Tree) {
 			return nil, fmt.Errorf("%w: nil child", ErrInvalidTree)
 		}
-		n.children[i] = Child[T]{bytes.Clone(c.Key), c.Tree}
+		result[i] = Child[T]{bytes.Clone(c.Key), c.Tree}
 	}
-	sort.Slice(n.children, func(i, j int) bool { return bytes.Compare(n.children[i].Key, n.children[j].Key) < 0 })
-	for i := 1; i < len(n.children); i++ {
-		if bytes.Equal(n.children[i-1].Key, n.children[i].Key) {
+	sort.Slice(result, func(i, j int) bool { return bytes.Compare(result[i].Key, result[j].Key) < 0 })
+	for i := 1; i < len(result); i++ {
+		if bytes.Equal(result[i-1].Key, result[i].Key) {
 			return nil, fmt.Errorf("%w: duplicate key", ErrInvalidTree)
 		}
 	}
-	return n, nil
+	return result, nil
+}
+
+// validateForeign walks children implemented outside this package with an
+// explicit stack. Nodes this package constructed were validated when they were.
+func validateForeign[T any](children []Child[T]) error {
+	type visit struct {
+		tree DeixisNode[T]
+		exit bool
+	}
+	stack := make([]visit, 0, len(children))
+	for _, c := range children {
+		stack = append(stack, visit{tree: c.Tree})
+	}
+	active := map[DeixisNode[T]]bool{}
+	done := map[DeixisNode[T]]bool{}
+	for len(stack) > 0 {
+		v := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if trusted[T](v.tree) {
+			continue
+		}
+		if v.exit {
+			delete(active, v.tree)
+			done[v.tree] = true
+			continue
+		}
+		// Only comparable, reflexive values (unlike one holding NaN) have an identity a map can track.
+		identified := reflect.ValueOf(v.tree).Comparable() && v.tree == v.tree
+		if identified {
+			if active[v.tree] {
+				return fmt.Errorf("%w: cyclic tree", ErrInvalidTree)
+			}
+			if done[v.tree] {
+				continue
+			}
+			active[v.tree] = true
+			stack = append(stack, visit{tree: v.tree, exit: true})
+		}
+		parts, err := sortedChildren(v.tree.Children())
+		if err != nil {
+			return err
+		}
+		for _, c := range parts {
+			stack = append(stack, visit{tree: c.Tree})
+		}
+	}
+	return nil
+}
+
+func trusted[T any](tree DeixisNode[T]) bool {
+	switch any(tree).(type) {
+	case *treeNode[T], *snapshot:
+		return true
+	}
+	return false
 }
 func (n *treeNode[T]) Own() T { return n.own }
 func (n *treeNode[T]) Children() []Child[T] {
