@@ -7,3 +7,9 @@ DataTree bindings materialize Data.read content through the identity-bytes
 specialization of the Deixis
 v0.4.0 candidate codec (commit 75a84d901396739cb9942afef50682540ec0857d).
 This release does not freeze that codec or claim clean-room independence.
+
+vectors/bitwire/wiretree/cases.json and scripts/bitwire/wiretree-lib.mjs are
+unmodified copies of conformance/wiretree/cases.json and scripts/wiretree-lib.mjs
+from Bitspark/bitwire at commit 3b237aaae063443297851e1c6e9edd960995ac11,
+licensed under the Apache License, Version 2.0:
+Copyright 2026 Bitspark and the Bitwire contributors.
